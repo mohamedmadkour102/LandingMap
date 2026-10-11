@@ -1,0 +1,229 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Cormorant Garamond", Georgia, serif;
+  --font-sans: "DM Sans", system-ui, sans-serif;
+  --font-geo: "Space Grotesk", system-ui, sans-serif;
+  --font-editorial: "Instrument Serif", Georgia, serif;
+  --font-bold-display: "Syne", system-ui, sans-serif;
+}
+
+:root {
+  color-scheme: dark;
+  --bg: #0a0a0a;
+  --surface: #141414;
+  --text: #f5f5f0;
+  --text-muted: #9a9a90;
+  --brand: #c4a574;
+  --accent: #e8e4d9;
+  --border: rgba(255, 255, 255, 0.1);
+  --map-bg: #0b1a14;
+  --map-land: #1a2e24;
+  --map-active: #c8e06a;
+  --map-node: #e8e4d9;
+  --map-border: rgba(232, 228, 217, 0.35);
+  --map-label: #e8e4d9;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--brand) 40%, transparent);
+  color: var(--text);
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+.theme-v1 {
+  --bg: #0b1a14;
+  --surface: #12241c;
+  --text: #e8e4d9;
+  --text-muted: #8a9a8e;
+  --brand: #c8e06a;
+  --accent: #e8e4d9;
+  --border: rgba(232, 228, 217, 0.12);
+  --map-bg: #0b1a14;
+  --map-land: #142820;
+  --map-active: #c8e06a;
+  --map-node: #e8e4d9;
+  --map-border: rgba(232, 228, 217, 0.4);
+  --map-label: #e8e4d9;
+  --font-hero: var(--font-display);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.theme-v2 {
+  --bg: #000000;
+  --surface: #0d0d0d;
+  --text: #ffffff;
+  --text-muted: #7a7a7a;
+  --brand: #d4d4d4;
+  --accent: #ffffff;
+  --border: rgba(255, 255, 255, 0.08);
+  --map-bg: #000000;
+  --map-land: #1a1a1a;
+  --map-active: #ffffff;
+  --map-node: #ffffff;
+  --map-border: rgba(255, 255, 255, 0.25);
+  --map-label: #ffffff;
+  --font-hero: var(--font-geo);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.theme-v5 {
+  --bg: #0a0e14;
+  --surface: rgba(16, 22, 32, 0.72);
+  --text: #f2efe8;
+  --text-muted: #9a9488;
+  --brand: #e8a54b;
+  --accent: #f0c078;
+  --border: rgba(242, 239, 232, 0.12);
+  --map-bg: #0a0e14;
+  --map-land: #1a2230;
+  --map-active: #e8a54b;
+  --map-node: #f2efe8;
+  --map-border: rgba(232, 165, 75, 0.55);
+  --map-label: #f2efe8;
+  --font-hero: var(--font-display);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.v5-glass {
+  background: rgba(12, 16, 24, 0.55);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(242, 239, 232, 0.12);
+}
+
+.v5-glass-panel {
+  background: rgba(10, 14, 22, 0.52);
+  backdrop-filter: blur(22px) saturate(1.1);
+  -webkit-backdrop-filter: blur(22px) saturate(1.1);
+  border: 1px solid rgba(232, 165, 75, 0.22);
+  border-left: 2px solid rgba(232, 165, 75, 0.85);
+  border-radius: 6px;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.35),
+    0 24px 64px rgba(0, 0, 0, 0.45),
+    -2px 0 24px rgba(232, 165, 75, 0.12);
+}
+
+.v5-story-card {
+  position: relative;
+  padding: 0.85rem 1rem;
+  padding-right: 3.1rem;
+  background: rgba(6, 10, 16, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+  transition: border-color 0.3s, background 0.3s;
+}
+
+.v5-story-card:hover {
+  background: rgba(8, 12, 20, 0.72);
+  border-color: rgba(232, 165, 75, 0.28);
+}
+
+.v5-story-orb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 999px;
+  background: rgba(40, 48, 58, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.v5-place-card {
+  background: rgba(8, 12, 18, 0.88);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(232, 165, 75, 0.35);
+  border-radius: 6px;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+}
+
+.theme-v5 .maplibregl-marker {
+  z-index: 3 !important;
+}
+
+.theme-v5 .maplibregl-map {
+  font: inherit;
+}
+
+.concept-switcher {
+  position: fixed;
+  bottom: 1.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.35rem;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+}
+
+.concept-switcher a {
+  padding: 0.45rem 0.9rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+  border-radius: 999px;
+  transition: color 0.2s, background 0.2s;
+}
+
+.concept-switcher a:hover,
+.concept-switcher a.active {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
