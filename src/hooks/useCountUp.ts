@@ -5,7 +5,11 @@ export function useCountUp(target: number, duration = 1400, start = false) {
   const raf = useRef<number>(0)
 
   useEffect(() => {
-    if (!start) return
+    cancelAnimationFrame(raf.current)
+    if (!start) {
+      setValue(0)
+      return
+    }
     const t0 = performance.now()
     const tick = (now: number) => {
       const p = Math.min(1, (now - t0) / duration)
@@ -20,7 +24,7 @@ export function useCountUp(target: number, duration = 1400, start = false) {
   return value
 }
 
-export function useInView(threshold = 0.25) {
+export function useInView(threshold = 0.25, rootMargin = '0px', once = true) {
   const ref = useRef<HTMLElement | null>(null)
   const [inView, setInView] = useState(false)
 
@@ -31,14 +35,16 @@ export function useInView(threshold = 0.25) {
       ([entry]) => {
         if (entry.isIntersecting) {
           setInView(true)
-          obs.disconnect()
+          if (once) obs.disconnect()
+        } else if (!once) {
+          setInView(false)
         }
       },
-      { threshold },
+      { threshold, rootMargin },
     )
     obs.observe(el)
     return () => obs.disconnect()
-  }, [threshold])
+  }, [threshold, rootMargin, once])
 
   return { ref, inView }
 }
