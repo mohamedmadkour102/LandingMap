@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "assets:logos": "python -I scripts/render-vector-logos.py",
     "assets": "node scripts/build-assets.mjs",
-    "assets:globe": "node scripts/build-globe-data.mjs"
+    "assets:globe": "node scripts/build-globe-data.mjs",
+    "assets:earth": "node scripts/build-earth.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.8",

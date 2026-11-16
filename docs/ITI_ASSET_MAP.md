@@ -208,3 +208,26 @@ Each item quotes the Word file ("Group Companies Description.docx") exactly.
 A film grain is added on the night sections so large gradients don't band.
 
 **Cost:** about 5.6 KB gzip extra on the ITI page. No new dependencies.
+
+## 5. Globe — hybrid realistic Earth (16 Nov 2026)
+
+**What changed**
+- The dot-matrix continents are replaced by a solid, textured Earth rendered by one WebGL fragment shader (`src/versions/iti/earthGL.ts`, no dependency). It reprojects in exactly the d3 orthographic frame, so every SVG layer (borders, arcs, markers, pins, cards, leader lines) stays registered.
+- Restrained light: soft diffuse sun from the upper left, a faint ocean sheen and a thin atmospheric rim. All three fade out as the camera zooms, so a market reads as a calm, evenly lit map. The surface still "develops" outwards from Cairo on the first view.
+- Removed: the graticule, the bloom/halo/specular/terminator SVG overlays, and the always-on dashed HQ links and lane comets.
+- Arcs are now contextual:
+  - Hovering a market traces its head-office link.
+  - Hovering Egypt shows the export lanes.
+  - Hovering the HQ shows every link.
+  - "Map layers" switches in the left panel preview a layer on hover and keep it on with a click, which is the touch path.
+- Progressive disclosure while zooming: globe markers fade out, then city labels, sea labels and site pins arrive during the flight instead of after it.
+- Smaller markers: market dots, HQ diamond and site pins are about 30% smaller, and the ping ripple only runs on the active item.
+- Panels:
+  - One label style with hairline rules and counts.
+  - The active market row gets a quiet glass plate.
+  - Panels are denser on desktop and solid on phones.
+- At zoom, other markets get a faint copper tint (no flat fill). The site photo appears inside the country only while a site is hovered or open.
+- Bundle: the footprint chunk went from 114.8 to 94.4 KB gzip (dots.json is no longer imported). Texture: 149 KB at 2048 loads with the section; 399 KB at 4096 follows on idle for screens ≥768 px whose GPU supports it, and is skipped on Save-Data or 2G connections.
+- Without WebGL, the globe falls back to the navy ocean disc with the same markers and interactions.
+
+**Texture provenance**: NASA Blue Marble (public domain) plus an SRTM/GTOPO height map, from the three-globe mirror (`cdn.jsdelivr.net/npm/three-globe@2.31.0/example/img/`). Both are staged in `scripts/.staged/earth/` (git-ignored) and baked with `npm run assets:earth` into `public/iti/earth/earth-{2048,4096}.webp`. Coastlines come from world-atlas land-50m.

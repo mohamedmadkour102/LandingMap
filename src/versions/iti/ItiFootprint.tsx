@@ -5,12 +5,12 @@ import * as d3 from 'd3'
 import { feature } from 'topojson-client'
 import type { Topology, GeometryCollection } from 'topojson-specification'
 import type { Feature, FeatureCollection, Geometry } from 'geojson'
-import dotsData from './geo/dots.json'
 import regionsTopo from './geo/regions.topo.json'
 import { AnimatedNumber } from '../../components/AnimatedNumber'
 import { useCountUp } from '../../hooks/useCountUp'
 import { Picture, photoUrl } from './media'
 import { onAssetRequest, takePendingAsset } from './mapBus'
+import { createEarthRenderer, type EarthRenderer } from './earthGL'
 import {
   ASSETS,
   CITY_LABELS,
@@ -40,7 +40,7 @@ type LatLng = [number, number]
 type CountryFeature = Feature<Geometry, object> & { id?: string | number }
 
 const topo = regionsTopo as unknown as Topology<{ countries: GeometryCollection }>
-const COUNTRIES = (feature(topo, topo.objects.countries) as FeatureCollection<Geometry, object>).features.map((f) => {
+const COUNTRIES = (feature(topo, topo.objects.countries) as FeatureCollection<Geometry, object>).features.map((f, i) => {
   const cf = f as CountryFeature
   const [clng, clat] = d3.geoCentroid(cf)
   const [[w, s], [e, n]] = d3.geoBounds(cf)
@@ -50,12 +50,21 @@ const COUNTRIES = (feature(topo, topo.objects.countries) as FeatureCollection<Ge
     d3.geoDistance([clng, clat], [w, n]),
     d3.geoDistance([clng, clat], [e, s]),
   )
-  return { iso: String(cf.id), f: cf, c: [clng, clat] as [number, number], reach: Math.min(Math.PI, reach) }
+  // a few territories (e.g. Kosovo, N. Cyprus) carry no ISO id — keep their keys unique
+  return { iso: cf.id != null && String(cf.id) !== 'undefined' ? String(cf.id) : `x${i}`, f: cf, c: [clng, clat] as [number, number], reach: Math.min(Math.PI, reach) }
 })
 
 const marketByIso = new Map<string, Market>()
 for (const m of MARKETS) for (const iso of m.iso) marketByIso.set(iso, m)
 const MARKET_COUNTRIES = COUNTRIES.filter((c) => marketByIso.has(c.iso))
+
+/** The country each site stands in — its photo fills that country (Poland, Italy, the U.S. …), not the whole market frame */
+const ASSET_ISO = new Map(
+  ASSETS.map((a) => {
+    const c = MARKET_COUNTRIES.find((m) => d3.geoContains(m.f as never, [a.coords[1], a.coords[0]]))
+    return [a.id, c ? [c.iso] : null] as const
+  }),
+)
 
 /** Globe camera: the point facing the viewer, the disc radius and where the disc centre sits */
 interface View {
@@ -222,31 +231,8 @@ function formatCoord(lat: number, lng: number) {
 const clamp01 = (v: number) => Math.max(0, Math.min(1, v))
 
 /* ------------------------------------------------------------------ */
-/* Dot-matrix land (canvas)                                            */
+/* Earth surface (WebGL, see earthGL.ts)                               */
 /* ------------------------------------------------------------------ */
-
-const DOTS = (() => {
-  const raw = (dotsData as { dots: number[] }).dots
-  const n = raw.length / 3
-  const sinLat = new Float32Array(n)
-  const cosLat = new Float32Array(n)
-  const sinLng = new Float32Array(n)
-  const cosLng = new Float32Array(n)
-  const market = new Uint8Array(n)
-  /** 0 at Cairo → 1 at the antipode: drives the intro reveal */
-  const fromHome = new Float32Array(n)
-  for (let i = 0; i < n; i++) {
-    const lng = raw[i * 3] / 10
-    const lat = raw[i * 3 + 1] / 10
-    sinLat[i] = Math.sin(lat * RAD)
-    cosLat[i] = Math.cos(lat * RAD)
-    sinLng[i] = Math.sin(lng * RAD)
-    cosLng[i] = Math.cos(lng * RAD)
-    market[i] = raw[i * 3 + 2]
-    fromHome[i] = d3.geoDistance([lng, lat], [CAIRO[1], CAIRO[0]]) / Math.PI
-  }
-  return { n, sinLat, cosLat, sinLng, cosLng, market, fromHome }
-})()
 
 /** Light comes from the upper left, slightly towards the viewer */
 const LIGHT = (() => {
@@ -258,119 +244,16 @@ const LIGHT = (() => {
 /** The canvas covers the viewBox plus this margin, so a growing globe is not cut at the stage edge */
 const CANVAS_PAD_X = 0.16
 const CANVAS_PAD_Y = 0.22
-const ALPHA_STEPS = 9
 
-interface DotPaint {
-  /** global opacity of the dot layer (fades out as the camera zooms in) */
-  alpha: number
-  /** market index + 1 under the cursor, 0 for none */
-  hot: number
-  /** 0 → 1 intro reveal, rippling out from Egypt */
-  reveal: number
-  /** dot radius in viewBox units */
-  r: number
+/** Map layers a visitor can preview from the legend; otherwise arcs only appear in context */
+type Layer = 'lanes' | 'hq'
+
+/** Zoom disclosure: 0 at the whole globe → 1 at a market frame (log scale, like the camera) */
+const zoomLevel = (s: number) => clamp01(Math.log(s / GLOBE_R) / Math.log(2.6))
+const smoothstep = (a: number, b: number, x: number) => {
+  const t = clamp01((x - a) / (b - a))
+  return t * t * (3 - 2 * t)
 }
-
-function paintDots(ctx: CanvasRenderingContext2D, v: View, p: DotPaint, scratch: Float32Array) {
-  const padX = W * CANVAS_PAD_X
-  const padY = H * CANVAS_PAD_Y
-  ctx.clearRect(-padX, -padY, W + padX * 2, H + padY * 2)
-  if (p.alpha <= 0.01) return
-
-  const phi0 = v.lat * RAD
-  const lam0 = v.lng * RAD
-  const sp0 = Math.sin(phi0)
-  const cp0 = Math.cos(phi0)
-  const sl0 = Math.sin(lam0)
-  const cl0 = Math.cos(lam0)
-  const { n, sinLat, cosLat, sinLng, cosLng, market, fromHome } = DOTS
-
-  // pass 1 — project, light, bucket
-  let count = 0
-  for (let i = 0; i < n; i++) {
-    const cosDl = cosLng[i] * cl0 + sinLng[i] * sl0
-    const z = sp0 * sinLat[i] + cp0 * cosLat[i] * cosDl
-    if (z <= 0.01) continue
-    const sinDl = sinLng[i] * cl0 - cosLng[i] * sl0
-    const x = cosLat[i] * sinDl
-    const y = cp0 * sinLat[i] - sp0 * cosLat[i] * cosDl
-    const sx = v.tx + v.s * x
-    const sy = v.ty - v.s * y
-    if (sx < -padX || sx > W + padX || sy < -padY || sy > H + padY) continue
-
-    let a = 1
-    if (p.reveal < 1) a = clamp01((p.reveal * 1.35 - fromHome[i]) / 0.35)
-    if (a <= 0) continue
-    const light = Math.max(0, x * LIGHT[0] + y * LIGHT[1] + z * LIGHT[2])
-    const limb = Math.min(1, z / 0.16)
-    const m = market[i]
-    const k = count * 4
-    scratch[k] = sx
-    scratch[k + 1] = sy
-    scratch[k + 2] = m
-    scratch[k + 3] = a * limb * (m ? 0.62 + 0.38 * light : 0.1 + 0.8 * Math.pow(light, 1.25))
-    count++
-  }
-
-  const r = p.r
-  const TAU = Math.PI * 2
-
-  // pass 2 — land, drawn in alpha buckets so each bucket is one fill
-  ctx.fillStyle = '#c9dbe6'
-  for (let b = 1; b <= ALPHA_STEPS; b++) {
-    const lo = (b - 1) / ALPHA_STEPS
-    const hi = b / ALPHA_STEPS
-    ctx.globalAlpha = p.alpha * hi
-    ctx.beginPath()
-    for (let j = 0; j < count; j++) {
-      const k = j * 4
-      if (scratch[k + 2] !== 0) continue
-      const a = scratch[k + 3]
-      if (a <= lo || a > hi) continue
-      ctx.moveTo(scratch[k] + r, scratch[k + 1])
-      ctx.arc(scratch[k], scratch[k + 1], r, 0, TAU)
-    }
-    ctx.fill()
-  }
-
-  // pass 3 — market halos, then market dots (copper, brighter for the hovered market)
-  for (const hot of [false, true]) {
-    ctx.globalAlpha = p.alpha * (hot ? 0.3 : 0.14)
-    ctx.fillStyle = hot ? '#ffb27e' : '#c9784a'
-    ctx.beginPath()
-    for (let j = 0; j < count; j++) {
-      const k = j * 4
-      const m = scratch[k + 2]
-      if (m === 0 || (m === p.hot) !== hot || scratch[k + 3] < 0.3) continue
-      const rr = r * (hot ? 3.1 : 2.5)
-      ctx.moveTo(scratch[k] + rr, scratch[k + 1])
-      ctx.arc(scratch[k], scratch[k + 1], rr, 0, TAU)
-    }
-    ctx.fill()
-  }
-  for (let b = 1; b <= 4; b++) {
-    const lo = (b - 1) / 4
-    const hi = b / 4
-    for (const hot of [false, true]) {
-      ctx.globalAlpha = p.alpha * hi
-      ctx.fillStyle = hot ? '#ffd9bd' : '#e39a6b'
-      ctx.beginPath()
-      for (let j = 0; j < count; j++) {
-        const k = j * 4
-        const m = scratch[k + 2]
-        if (m === 0 || (m === p.hot) !== hot) continue
-        const a = scratch[k + 3]
-        if (a <= lo || a > hi) continue
-        const rr = r * (hot ? 1.45 : 1.25)
-        ctx.moveTo(scratch[k] + rr, scratch[k + 1])
-        ctx.arc(scratch[k], scratch[k + 1], rr, 0, TAU)
-      }
-      ctx.fill()
-    }
-  }
-  ctx.globalAlpha = 1
-}
-
 /* ------------------------------------------------------------------ */
 /* Lifted great-circle arcs                                            */
 /* ------------------------------------------------------------------ */
@@ -424,7 +307,7 @@ type Tip = { key: string; x: number; y: number } & (
 
 const LAND_ZOOM = '#124a68'
 const LAND_ZOOM_STROKE = 'rgba(190, 216, 232, 0.22)'
-const MARKET_ZOOM = 'rgba(201, 120, 74, 0.42)'
+const MARKET_ZOOM = 'rgba(201, 120, 74, 0.14)'
 
 export default function ItiFootprint({ lang }: Props) {
   const t = COPY.footprint
@@ -459,7 +342,12 @@ export default function ItiFootprint({ lang }: Props) {
   const [boxW, setBoxW] = useState(0)
   const mapBoxRef = useRef<HTMLDivElement | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
-  const scratch = useMemo(() => new Float32Array(DOTS.n * 4), [])
+  const earthRef = useRef<EarthRenderer | null>(null)
+  const [glFailed, setGlFailed] = useState(false)
+  const texAt = useRef<number | null>(null)
+  /** legend preview (hover / focus) and pinned layer (click — the touch path) */
+  const [layerPeek, setLayerPeek] = useState<Layer | null>(null)
+  const [layerPin, setLayerPin] = useState<Layer | null>(null)
   const coordRef = useRef<HTMLSpanElement | null>(null)
   const introStarted = useRef(false)
   const revealStart = useRef<number | null>(reduceMotion ? -1e9 : null)
@@ -641,11 +529,18 @@ export default function ItiFootprint({ lang }: Props) {
 
   /** 1 while the whole globe is in frame, 0 once zoomed in far enough to read as a flat map */
   const round = clamp01((GLOBE_R * 3.2 - view.s) / (GLOBE_R * 2.2))
-  /** Dot matrix → flat country fills as the camera closes in */
-  const dotAlpha = clamp01((GLOBE_R * 1.75 - view.s) / (GLOBE_R * 0.75))
-  const flatAlpha = 1 - dotAlpha
+  /** Globe-scale market washes → map-scale borders as the camera closes in */
+  const globeAlpha = clamp01((GLOBE_R * 1.75 - view.s) / (GLOBE_R * 0.75))
+  const flatAlpha = 1 - globeAlpha
+  /** progressive disclosure while zooming: globe markers out, then cities, seas and pins in */
+  const zl = zoomLevel(view.s)
+  const globeMarkers = 1 - smoothstep(0.12, 0.42, zl)
+  const cityReveal = smoothstep(0.45, 0.8, zl)
+  const seaReveal = smoothstep(0.7, 0.98, zl)
+  const pinsReady = zl > 0.72
 
   const revealNow = revealStart.current == null ? 0 : clamp01((performance.now() - revealStart.current) / 1700)
+  const texAlpha = texAt.current == null ? 0 : clamp01((performance.now() - texAt.current) / 650)
   const markerReveal = clamp01((revealNow - 0.35) / 0.45)
 
   /** Only countries that can be on screen are projected */
@@ -658,7 +553,6 @@ export default function ItiFootprint({ lang }: Props) {
       .filter((c) => c.d)
   }, [path, view.lng, view.lat, flatAlpha])
 
-  const graticuleD = useMemo(() => path(d3.geoGraticule10() as never) ?? '', [path])
   const sphereD = useMemo(() => path({ type: 'Sphere' } as never) ?? '', [path])
 
   const project = (lat: number, lng: number) => projection([lng, lat]) as [number, number]
@@ -669,44 +563,107 @@ export default function ItiFootprint({ lang }: Props) {
   const focusMarketObj = focus ? MARKETS.find((m) => m.id === focus)! : null
   const hoveredMarket = hovered ? MARKETS.find((m) => m.id === hovered)! : null
   const plantsMode = focusMarketObj?.depth === 'plants' && settled
+  /** pins and city labels arrive during the flight, not after it */
+  const plantsVisible = focusMarketObj?.depth === 'plants' && pinsReady
+  const layer = layerPeek ?? layerPin
+  /** arcs in context: the hovered market's head-office link; the export lanes with Egypt; or a legend layer */
+  const showLanes = !focus && (layer === 'lanes' || hovered === 'egypt')
+  const hqRouteFor = (id: MarketId) => !focus && (layer === 'hq' || hqHover || hovered === id)
   const hoveredAsset = hoveredAssetId ? ASSETS.find((a) => a.id === hoveredAssetId) ?? null : null
 
-  /* ---------------- canvas: dot-matrix land ---------------- */
+  /* ---------------- canvas: the Earth (WebGL) ---------------- */
+
+  const [, forceTick] = useState(0)
 
   useEffect(() => {
     const c = canvasRef.current
-    if (!c || boxW === 0) return
+    if (!c) return
+    let alive = true
+    let r: EarthRenderer | null = null
+    const conn = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection
+    const lite = conn?.saveData || /2g/.test(conn?.effectiveType ?? '')
+
+    const load = (target: EarthRenderer, w: number) =>
+      new Promise<void>((done) => {
+        const img = new Image()
+        img.decoding = 'async'
+        img.src = `/iti/earth/earth-${w}.webp`
+        img
+          .decode()
+          .then(() => {
+            if (!alive || earthRef.current !== target) return
+            target.setTexture(img, w)
+            if (texAt.current == null) texAt.current = performance.now()
+            forceTick((n) => n + 1)
+          })
+          .catch(() => undefined)
+          .finally(done)
+      })
+
+    const boot = () => {
+      r = createEarthRenderer(c, LIGHT, CAIRO)
+      earthRef.current = r
+      if (!r) {
+        setGlFailed(true)
+        return
+      }
+      setGlFailed(false)
+      const target = r
+      // 2K paints first; the 4K surface follows when the screen and the GPU can use it
+      void load(target, 2048).then(() => {
+        if (!alive || earthRef.current !== target || lite || target.maxTexture < 4096 || !window.matchMedia('(min-width: 768px)').matches) return
+        const idle = window.requestIdleCallback ?? ((fn: () => void) => window.setTimeout(fn, 500))
+        idle(() => void load(target, 4096))
+      })
+      forceTick((n) => n + 1)
+    }
+
+    // a lost GPU context (driver reset, tab in background on mobile) is rebuilt, not abandoned
+    const onLost = (e: Event) => {
+      e.preventDefault()
+      earthRef.current = null
+      r = null
+    }
+    const onRestored = () => alive && boot()
+    c.addEventListener('webglcontextlost', onLost)
+    c.addEventListener('webglcontextrestored', onRestored)
+    boot()
+    return () => {
+      alive = false
+      c.removeEventListener('webglcontextlost', onLost)
+      c.removeEventListener('webglcontextrestored', onRestored)
+      r?.dispose()
+      earthRef.current = null
+    }
+  }, [])
+
+  useEffect(() => {
+    const c = canvasRef.current
+    const r = earthRef.current
+    if (!c || !r || boxW === 0) return
     const dpr = Math.min(2, window.devicePixelRatio || 1)
     const cssW = boxW * (1 + CANVAS_PAD_X * 2)
-    const cssH = (boxW * H) / W * (1 + CANVAS_PAD_Y * 2)
+    const cssH = ((boxW * H) / W) * (1 + CANVAS_PAD_Y * 2)
     const pxW = Math.round(cssW * dpr)
     const pxH = Math.round(cssH * dpr)
     if (c.width !== pxW || c.height !== pxH) {
       c.width = pxW
       c.height = pxH
     }
-    const ctx = c.getContext('2d')
-    if (!ctx) return
-    const unit = (boxW / W) * dpr
-    ctx.setTransform(unit, 0, 0, unit, W * CANVAS_PAD_X * unit, H * CANVAS_PAD_Y * unit)
-    const hotIdx = hovered ? MARKETS.findIndex((m) => m.id === hovered) + 1 : 0
-    paintDots(
-      ctx,
+    r.draw({
       view,
-      {
-        alpha: dotAlpha,
-        hot: hotIdx,
-        reveal: revealNow,
-        r: 1.05 * Math.pow(view.s / GLOBE_R, 0.55) * Math.sqrt(k),
-      },
-      scratch,
-    )
+      unit: (boxW / W) * dpr,
+      padX: W * CANVAS_PAD_X,
+      padY: H * CANVAS_PAD_Y,
+      reveal: revealNow,
+      round,
+      texAlpha,
+    })
   })
 
-  /* keep painting until the intro ripple has finished, even if the camera is still */
-  const [, forceTick] = useState(0)
+  /* keep painting until the intro and the texture fade have finished, even if the camera is still */
   useEffect(() => {
-    if (revealStart.current == null || revealNow >= 1) return
+    if ((revealStart.current == null || revealNow >= 1) && (texAt.current == null || texAlpha >= 1)) return
     const raf = requestAnimationFrame(() => forceTick((n) => n + 1))
     return () => cancelAnimationFrame(raf)
   })
@@ -715,30 +672,59 @@ export default function ItiFootprint({ lang }: Props) {
    * Photos only after a market is open — the overview globe must look complete on its own.
    * A duotone (navy → copper cream) keeps every client photo in one brand key.
    */
-  const photo = useMemo(() => {
-    if (!focusMarketObj) return null
-    const asset = plantsMode ? hoveredAsset ?? selected : null
-    if (asset) return { market: MARKETS.find((m) => m.id === asset.market)!, href: photoUrl(asset.photo, 1600) }
-    return { market: focusMarketObj, href: photoUrl(focusMarketObj.photo, 1600) }
-  }, [focusMarketObj, plantsMode, hoveredAsset, selected])
+  const overviewMarket = overview ? MARKETS.find((m) => m.id === overview)! : null
 
+  /**
+   * The photo of what the visitor is looking at, clipped to its country in the brand duotone:
+   * a hovered or open site in a plants market, or the market itself while its overview card is open (KSA).
+   */
+  const photo = useMemo(() => {
+    if (!focusMarketObj || !settled) return null
+    if (plantsMode) {
+      const asset = hoveredAsset ?? selected
+      if (!asset) return null
+      const market = MARKETS.find((m) => m.id === asset.market)!
+      return { isos: ASSET_ISO.get(asset.id) ?? market.iso, href: photoUrl(asset.photo, 1600) }
+    }
+    if (overviewMarket) return { isos: overviewMarket.iso, href: photoUrl(overviewMarket.photo, 1600) }
+    return null
+  }, [focusMarketObj, settled, plantsMode, hoveredAsset, selected, overviewMarket])
+
+  const photoIsos = photo ? photo.isos : []
+  /** the photo covers the on-screen part of its countries, so it always reads at full size */
   const photoBounds = useMemo(() => {
     if (!photo) return null
-    const b = path.bounds(multiPoint(photo.market.frame) as never)
-    if (!b || !Number.isFinite(b[0][0])) return null
-    return b as [[number, number], [number, number]]
+    let x0 = Infinity
+    let y0 = Infinity
+    let x1 = -Infinity
+    let y1 = -Infinity
+    for (const c of MARKET_COUNTRIES) {
+      if (!photo.isos.includes(c.iso)) continue
+      const b = path.bounds(c.f as never)
+      if (!Number.isFinite(b[0][0])) continue
+      x0 = Math.min(x0, b[0][0])
+      y0 = Math.min(y0, b[0][1])
+      x1 = Math.max(x1, b[1][0])
+      y1 = Math.max(y1, b[1][1])
+    }
+    x0 = Math.max(x0, 0)
+    y0 = Math.max(y0, 0)
+    x1 = Math.min(x1, W)
+    y1 = Math.min(y1, H)
+    if (!(x1 - x0 > 4 && y1 - y0 > 4)) return null
+    return [
+      [x0, y0],
+      [x1, y1],
+    ] as [[number, number], [number, number]]
   }, [photo, path])
-  const photoIsos = photo && photoBounds ? photo.market.iso.filter((iso) => !photo.market.isoUnderConstruction?.includes(iso)) : []
 
-  const assetsInFocus = plantsMode ? ASSETS.filter((a) => a.market === focus) : []
+  const assetsInFocus = plantsVisible ? ASSETS.filter((a) => a.market === focus) : []
   const pins = assetsInFocus.map((a) => {
     const hub = a.hub ? CITY_POINT[a.hub] : undefined
     const off = PIN_OFFSET[a.id]
     const p = hub && off ? project(hub[0], hub[1]) : project(a.coords[0], a.coords[1])
     return { asset: a, x: p[0] + (hub && off ? off[0] * k : 0), y: p[1] + (hub && off ? off[1] * k : 0) }
   })
-
-  const overviewMarket = overview ? MARKETS.find((m) => m.id === overview)! : null
 
   /** Leader line from the open site (or market) to the side card's edge — desktop only, mirrors SideCard's geometry */
   const leader = (() => {
@@ -960,8 +946,9 @@ export default function ItiFootprint({ lang }: Props) {
 
                   {focusMarketObj.depth === 'plants' && (
                     <div className="mt-6 hidden lg:block">
-                      <p className="mb-2 text-[0.68rem] font-semibold tracking-[0.2em] uppercase text-[var(--iti-fp-soft)]">
+                      <p className="iti-panel-label mb-2">
                         {t.sitesList[lang]}
+                        <span className="iti-panel-count" dir="ltr">{ASSETS.filter((a) => a.market === focusMarketObj.id).length}</span>
                       </p>
                       <ul className="divide-y divide-white/10 border-y border-white/10">
                         {ASSETS.filter((a) => a.market === focusMarketObj.id).map((a) => {
@@ -1018,29 +1005,61 @@ export default function ItiFootprint({ lang }: Props) {
                     <span className="iti-pulse-dot" aria-hidden />
                     {touch ? t.hintTouch[lang] : t.hint[lang]}
                   </p>
-                  <ul className="mt-8 space-y-3 text-[0.75rem] text-[var(--iti-fp-soft)]">
-                    <li className="flex items-center gap-3">
-                      <svg width="34" height="10" aria-hidden>
-                        <path d="M1 8 Q17 -2 33 8" fill="none" stroke="#d9895a" strokeWidth="1.6" />
-                        <circle cx="25" cy="4.6" r="2" fill="#ffd9bd" />
-                      </svg>
-                      {t.lanes[lang]}
-                    </li>
-                    <li className="flex items-center gap-3">
-                      <svg width="34" height="10" aria-hidden>
-                        <path d="M1 5 H33" fill="none" stroke="#9fc3d8" strokeOpacity="0.6" strokeWidth="1.2" strokeDasharray="3 4" />
-                      </svg>
-                      {t.hqLinks[lang]}
-                    </li>
-                    <li className="flex items-center gap-3">
+                  <p className="iti-panel-label mt-9">{t.layers[lang]}</p>
+                  <ul className="mt-3 space-y-1.5 text-[0.78rem]">
+                    {(
+                      [
+                        {
+                          id: 'lanes' as const,
+                          label: t.lanes[lang],
+                          icon: (
+                            <svg width="34" height="10" aria-hidden>
+                              <path d="M1 8 Q17 -2 33 8" fill="none" stroke="#d9895a" strokeWidth="1.4" />
+                              <circle cx="25" cy="4.6" r="1.8" fill="#ffd9bd" />
+                            </svg>
+                          ),
+                        },
+                        {
+                          id: 'hq' as const,
+                          label: t.hqLinks[lang],
+                          icon: (
+                            <svg width="34" height="10" aria-hidden>
+                              <path d="M1 5 H33" fill="none" stroke="#9fc3d8" strokeOpacity="0.7" strokeWidth="1.1" strokeDasharray="2 4" />
+                            </svg>
+                          ),
+                        },
+                      ] satisfies { id: Layer; label: string; icon: ReactNode }[]
+                    ).map((l) => {
+                      const on = layerPin === l.id
+                      return (
+                        <li key={l.id}>
+                          <button
+                            type="button"
+                            aria-pressed={on}
+                            onClick={() => setLayerPin((cur) => (cur === l.id ? null : l.id))}
+                            onMouseEnter={() => setLayerPeek(l.id)}
+                            onMouseLeave={() => setLayerPeek(null)}
+                            onFocus={() => setLayerPeek(l.id)}
+                            onBlur={() => setLayerPeek(null)}
+                            className={`iti-layer ${on ? 'is-on' : ''}`}
+                          >
+                            {l.icon}
+                            <span className="flex-1 text-start">{l.label}</span>
+                            <span className="iti-layer-switch" aria-hidden />
+                          </button>
+                        </li>
+                      )
+                    })}
+                    <li className="flex items-center gap-3 px-3 py-2 text-[var(--iti-fp-soft)]">
                       <span className="flex w-[34px] justify-center gap-[3px]" aria-hidden>
                         {[0, 1, 2, 3].map((i) => (
-                          <span key={i} className="h-[5px] w-[5px] rounded-full bg-[#e39a6b]" />
+                          <span key={i} className="h-[4px] w-[4px] rounded-full bg-[#e39a6b]" />
                         ))}
                       </span>
                       {t.markets[lang]}
                     </li>
                   </ul>
+                  <p className="mt-3 px-3 text-[0.68rem] text-[var(--iti-fp-soft)]/80">{touch ? t.layersHintTouch[lang] : t.layersHint[lang]}</p>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -1082,31 +1101,6 @@ export default function ItiFootprint({ lang }: Props) {
                   <stop offset="0.78" stopColor="#062c45" />
                   <stop offset="1" stopColor="#031c2e" />
                 </radialGradient>
-                <radialGradient id={`${uid}-halo`} cx="50%" cy="50%" r="50%">
-                  <stop offset="0.8" stopColor="#5fa3c9" stopOpacity={0.42} />
-                  <stop offset="0.86" stopColor="#3f7fa6" stopOpacity={0.2} />
-                  <stop offset="0.93" stopColor="#a9613a" stopOpacity={0.07} />
-                  <stop offset="1" stopColor="#215c7e" stopOpacity={0} />
-                </radialGradient>
-                <radialGradient id={`${uid}-bloom`} cx="50%" cy="50%" r="50%">
-                  <stop offset="0" stopColor="#215c7e" stopOpacity={0.5} />
-                  <stop offset="1" stopColor="#215c7e" stopOpacity={0} />
-                </radialGradient>
-                <radialGradient id={`${uid}-spec`} cx="30%" cy="24%" r="42%">
-                  <stop offset="0" stopColor="#d9f0ff" stopOpacity={0.2} />
-                  <stop offset="0.5" stopColor="#bfe2f7" stopOpacity={0.05} />
-                  <stop offset="1" stopColor="#ffffff" stopOpacity={0} />
-                </radialGradient>
-                <radialGradient id={`${uid}-term`} cx="34%" cy="28%" r="86%">
-                  <stop offset="0.5" stopColor="#010d16" stopOpacity={0} />
-                  <stop offset="0.8" stopColor="#010d16" stopOpacity={0.22} />
-                  <stop offset="1" stopColor="#010d16" stopOpacity={0.55} />
-                </radialGradient>
-                <radialGradient id={`${uid}-rim`} cx="50%" cy="50%" r="50%">
-                  <stop offset="0.86" stopColor="#8fc4e3" stopOpacity={0} />
-                  <stop offset="0.97" stopColor="#8fc4e3" stopOpacity={0.2} />
-                  <stop offset="1" stopColor="#cfe8f6" stopOpacity={0.45} />
-                </radialGradient>
                 <filter id={`${uid}-soft`} x="-40%" y="-40%" width="180%" height="180%">
                   <feGaussianBlur stdDeviation="2.2" />
                 </filter>
@@ -1120,17 +1114,11 @@ export default function ItiFootprint({ lang }: Props) {
                 </filter>
               </defs>
 
-              {round > 0 && (
-                <>
-                  <circle cx={view.tx} cy={view.ty} r={view.s * 1.9} fill={`url(#${uid}-bloom)`} opacity={round * 0.55} />
-                  <circle cx={view.tx} cy={view.ty} r={view.s * 1.2} fill={`url(#${uid}-halo)`} opacity={round} />
-                </>
-              )}
-              <path d={sphereD} fill={`url(#${uid}-ocean)`} />
-              <path d={graticuleD} fill="none" stroke="#9fd0ec" strokeOpacity={0.06 + round * 0.05} strokeWidth={0.5} />
+              {/* the Earth is shaded in WebGL; without it the globe keeps a quiet ocean disc */}
+              {glFailed && <path d={sphereD} fill={`url(#${uid}-ocean)`} />}
             </svg>
 
-            {/* ---------- dot-matrix land ---------- */}
+            {/* ---------- the Earth ---------- */}
             <canvas
               ref={canvasRef}
               className="pointer-events-none absolute"
@@ -1176,8 +1164,7 @@ export default function ItiFootprint({ lang }: Props) {
                     <path
                       key={iso}
                       d={d}
-                      fill={LAND_ZOOM}
-                      fillOpacity={flatAlpha}
+                      fill="transparent"
                       stroke={LAND_ZOOM_STROKE}
                       strokeOpacity={flatAlpha}
                       strokeWidth={0.6}
@@ -1187,18 +1174,18 @@ export default function ItiFootprint({ lang }: Props) {
                   )
                 }
 
-                // a market: luminous copper wash over its dots on the globe, a solid fill when zoomed
-                const globeFill = isHot ? 'rgba(227,154,107,0.3)' : 'rgba(201,120,74,0.16)'
-                const zoomFill = isPhoto || isFocus ? LAND_ZOOM : MARKET_ZOOM
+                // a market: a faint copper wash on the globe; a hairline border with a whisper of tint when zoomed
+                const globeFill = isHot ? 'rgba(227,154,107,0.26)' : 'rgba(201,120,74,0.1)'
+                const zoomFill = isPhoto ? LAND_ZOOM : isFocus ? 'rgba(239,201,164,0.05)' : MARKET_ZOOM
                 return (
                   <g key={iso} className="cursor-pointer">
                     <path
                       d={d}
                       fill={globeFill}
-                      opacity={dotAlpha}
+                      opacity={globeAlpha}
                       stroke={isHot ? '#ffcfae' : '#e39a6b'}
-                      strokeOpacity={isHot ? 0.95 : 0.55}
-                      strokeWidth={isHot ? 1.4 : 0.8}
+                      strokeOpacity={isHot ? 0.9 : 0.42}
+                      strokeWidth={isHot ? 1.2 : 0.6}
                       strokeDasharray={building ? '4 3' : undefined}
                       strokeLinejoin="round"
                       className="transition-[fill] duration-300"
@@ -1211,8 +1198,8 @@ export default function ItiFootprint({ lang }: Props) {
                         d={d}
                         fill={zoomFill}
                         opacity={flatAlpha}
-                        stroke={isPhoto || isFocus ? '#e9b38f' : 'rgba(233,179,143,0.6)'}
-                        strokeWidth={isPhoto ? 1.6 : 0.9}
+                        stroke={isPhoto || isFocus ? '#e9b38f' : 'rgba(233,179,143,0.5)'}
+                        strokeWidth={isPhoto || isFocus ? 1.3 : 0.8}
                         strokeDasharray={building ? '4 3' : undefined}
                         strokeLinejoin="round"
                         onClick={() => onCountryClick(iso)}
@@ -1224,7 +1211,7 @@ export default function ItiFootprint({ lang }: Props) {
 
               {/* the open market's photo, clipped to its borders, in the brand duotone */}
               {photo && photoBounds && photoIsos.length > 0 && (
-                <g pointerEvents="none" opacity={flatAlpha}>
+                <g pointerEvents="none" opacity={0.88}>
                   <defs>
                     <clipPath id={`${uid}-clip`}>
                       {visibleCountries
@@ -1255,24 +1242,18 @@ export default function ItiFootprint({ lang }: Props) {
               )}
 
               {/* navy wash over a plant photo keeps pins and labels readable */}
-              {plantsMode &&
+              {photo &&
                 visibleCountries
                   .filter((c) => photoIsos.includes(c.iso))
                   .map((c) => <path key={`wash-${c.iso}`} d={c.d} fill="#021a2b" fillOpacity={0.28} pointerEvents="none" />)}
 
-              {/* specular + terminator + rim light — fade out as the camera closes in */}
-              {round > 0 && (
-                <g pointerEvents="none" opacity={round}>
-                  <path d={sphereD} fill={`url(#${uid}-spec)`} />
-                  <path d={sphereD} fill={`url(#${uid}-term)`} />
-                  <path d={sphereD} fill={`url(#${uid}-rim)`} />
-                  <path d={sphereD} fill="none" stroke="#bfe0f2" strokeOpacity={0.35} strokeWidth={0.8} />
-                </g>
-              )}
+              {/* hairline limb — the shader carries the light and the atmosphere */}
+              {round > 0 && <path d={sphereD} fill="none" stroke="#bfe0f2" strokeOpacity={0.16 * round} strokeWidth={0.6} pointerEvents="none" />}
 
               {/* head-office links from Barcelona */}
               {!focus &&
                 MARKETS.map((m) => {
+                  if (!hqRouteFor(m.id)) return null
                   const d = path({
                     type: 'LineString',
                     coordinates: [
@@ -1283,40 +1264,52 @@ export default function ItiFootprint({ lang }: Props) {
                   if (!d) return null
                   const on = hovered === m.id
                   return (
-                    <g key={`route-${m.id}`} pointerEvents="none" opacity={markerReveal * (hovered && !on ? 0.4 : 1)}>
+                    <motion.g
+                      key={`route-${m.id}`}
+                      pointerEvents="none"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: markerReveal * globeMarkers }}
+                      transition={{ duration: 0.25 }}
+                    >
                       <path
                         d={d}
                         fill="none"
-                        stroke={on ? '#e39a6b' : '#9fc3d8'}
-                        strokeOpacity={on ? 0.9 : 0.42}
-                        strokeWidth={(on ? 1.5 : 1) * k}
-                        strokeDasharray={on ? undefined : '3 6'}
+                        stroke="#9fc3d8"
+                        strokeOpacity={0.5}
+                        strokeWidth={0.8 * k}
+                        strokeDasharray="2 5"
                         strokeLinecap="round"
-                        className={hovered ? undefined : 'iti-flow'}
                       />
-                      {on && settled && <RouteTrace d={d} k={k} reduceMotion={reduceMotion} />}
-                    </g>
+                      {settled && <RouteTrace d={d} k={k} reduceMotion={reduceMotion} strong={on} />}
+                    </motion.g>
                   )
                 })}
 
               {/* export & distribution lanes from Alexandria — lifted arcs with travelling light */}
-              {!focus && markerReveal > 0 && (
-                <g pointerEvents="none" opacity={markerReveal}>
+              <AnimatePresence>
+              {showLanes && markerReveal > 0 && (
+                <motion.g
+                  key="lanes"
+                  pointerEvents="none"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: markerReveal * globeMarkers }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
                   {LANES.map((lane, i) => {
                     const d = liftedArc(LANE_ORIGIN, lane.to, view, 0.16)
                     if (!d) return null
-                    const dim = hovered != null
                     return (
-                      <g key={lane.id} opacity={dim ? 0.45 : 1}>
-                        <path d={d} fill="none" stroke="#c9784a" strokeOpacity={0.22} strokeWidth={4 * k} filter={`url(#${uid}-soft)`} />
-                        <path d={d} fill="none" stroke="#d9895a" strokeOpacity={0.62} strokeWidth={0.95 * k} strokeLinecap="round" />
+                      <g key={lane.id}>
+                        <path d={d} fill="none" stroke="#c9784a" strokeOpacity={0.14} strokeWidth={3 * k} filter={`url(#${uid}-soft)`} />
+                        <path d={d} fill="none" stroke="#d9895a" strokeOpacity={0.7} strokeWidth={0.8 * k} strokeLinecap="round" />
                         {!reduceMotion && (
                           <path
                             d={d}
                             pathLength={1}
                             fill="none"
                             stroke="#ffe2cc"
-                            strokeWidth={2 * k}
+                            strokeWidth={1.6 * k}
                             strokeLinecap="round"
                             className="iti-comet"
                             style={{ animationDelay: `${(i * 0.53) % 3.2}s` }}
@@ -1331,8 +1324,7 @@ export default function ItiFootprint({ lang }: Props) {
                     const p = project(lane.to[0], lane.to[1])
                     return (
                       <g key={`end-${lane.id}`} transform={`translate(${p[0]} ${p[1]}) scale(${k})`} opacity={facing}>
-                        <circle r={6} fill="#e39a6b" opacity={0.2} className="iti-ping" />
-                        <circle r={2.3} fill="#ffe2cc" />
+                        <circle r={1.9} fill="#ffe2cc" />
                         {lane.label && (
                           <text x={7} y={3.5} className="iti-map-label iti-map-label-soft" fontSize={9.5} fontWeight={600}>
                             {lane.label[lang]}
@@ -1345,10 +1337,11 @@ export default function ItiFootprint({ lang }: Props) {
                     const facing = limb(LANE_ORIGIN[0], LANE_ORIGIN[1])
                     if (facing === 0) return null
                     const p = project(LANE_ORIGIN[0], LANE_ORIGIN[1])
-                    return <circle cx={p[0]} cy={p[1]} r={2.6 * k} fill="#ffe2cc" opacity={facing} />
+                    return <circle cx={p[0]} cy={p[1]} r={2.2 * k} fill="#ffe2cc" opacity={facing} />
                   })()}
-                </g>
+                </motion.g>
               )}
+              </AnimatePresence>
 
               {/* head office */}
               {!focus &&
@@ -1358,45 +1351,47 @@ export default function ItiFootprint({ lang }: Props) {
                   return (
                     <g
                       transform={`translate(${p[0]} ${p[1]}) scale(${k})`}
-                      opacity={limb(HQ[0], HQ[1]) * markerReveal}
+                      opacity={limb(HQ[0], HQ[1]) * markerReveal * globeMarkers}
                       className="cursor-default"
                       onMouseEnter={() => setHqHover(true)}
                       onMouseLeave={() => setHqHover(false)}
                     >
                       <circle r={16} fill="transparent" />
-                      <circle r={12} fill="#9fc3d8" opacity={0.18} className="iti-ping" />
                       <rect
-                        x={-5}
-                        y={-5}
-                        width={10}
-                        height={10}
-                        transform={`rotate(45) scale(${hqHover ? 1.22 : 1})`}
+                        x={-3.6}
+                        y={-3.6}
+                        width={7.2}
+                        height={7.2}
+                        transform={`rotate(45) scale(${hqHover ? 1.25 : 1})`}
                         fill="#ffffff"
                         stroke="#053552"
-                        strokeWidth={2}
+                        strokeWidth={1.5}
                       />
-                      <text x={-12} y={4} textAnchor="end" className="iti-city-label" style={{ fontSize: 10, strokeWidth: 3.5 }}>
+                      <text x={-10} y={3.5} textAnchor="end" className="iti-city-label" style={{ fontSize: 9, strokeWidth: 3 }}>
                         {t.hq[lang]}
                       </text>
                     </g>
                   )
                 })()}
 
-              {/* market markers */}
-              {!focus &&
+              {/* market markers — they hand over to cities and sites as the camera closes in */}
+              {globeMarkers > 0.01 &&
                 MARKETS.map((m) => {
                   const facing = limb(m.anchor[0], m.anchor[1])
                   if (facing === 0) return null
+                  const live = !focus
                   const p = project(m.anchor[0], m.anchor[1])
                   const active = hovered === m.id
                   return (
                     <g
                       key={m.id}
                       transform={`translate(${p[0]} ${p[1]})`}
-                      opacity={facing * markerReveal}
-                      className="cursor-pointer"
+                      opacity={facing * markerReveal * globeMarkers}
+                      className={live ? 'cursor-pointer' : undefined}
+                      pointerEvents={live ? undefined : 'none'}
                       role="button"
-                      tabIndex={0}
+                      tabIndex={live ? 0 : -1}
+                      aria-hidden={live ? undefined : true}
                       aria-label={m.name[lang]}
                       onMouseEnter={() => !dragRef.current?.moved && setHovered(m.id)}
                       onMouseLeave={() => setHovered(null)}
@@ -1411,13 +1406,12 @@ export default function ItiFootprint({ lang }: Props) {
                       }}
                     >
                       <g transform={`scale(${k})`}>
-                        <circle r={24} fill="transparent" />
-                        <circle r={18} fill="#e39a6b" opacity={0.18} className="iti-ping" />
-                        <circle r={11} fill="#e39a6b" opacity={active ? 0.32 : 0.16} />
-                        <circle className="iti-pin-core" r={active ? 7.5 : 6} fill="#c9784a" stroke="#fff" strokeWidth={2.2} />
-                        <circle r={2.2} fill="#fff" opacity={0.95} pointerEvents="none" />
-                        <g transform={`translate(${LABEL_POS[m.id].dx} ${LABEL_POS[m.id].dy})`}>
-                          <text textAnchor={LABEL_POS[m.id].anchor} className="iti-map-label" fontSize={active ? 14.5 : 12.5} fontWeight={700}>
+                        <circle r={20} fill="transparent" />
+                        {active && <circle r={12} fill="#e39a6b" opacity={0.22} className="iti-ping" />}
+                        <circle r={7.5} fill="#e39a6b" opacity={active ? 0.26 : 0.12} />
+                        <circle className="iti-pin-core" r={active ? 5.2 : 4.4} fill="#c9784a" stroke="#fff" strokeWidth={1.6} />
+                        <g transform={`translate(${LABEL_POS[m.id].dx * 0.82} ${LABEL_POS[m.id].dy * 0.82})`}>
+                          <text textAnchor={LABEL_POS[m.id].anchor} className="iti-map-label" fontSize={active ? 13 : 11.5} fontWeight={700}>
                             {(m.mapName ?? m.name)[lang]}
                           </text>
                         </g>
@@ -1427,34 +1421,34 @@ export default function ItiFootprint({ lang }: Props) {
                 })}
 
               {/* zoomed: sea + city labels */}
-              {plantsMode &&
+              {plantsVisible &&
+                seaReveal > 0 &&
                 CONTEXT_LABELS.filter((c) => c.market === focus).map((c) => {
                   const p = project(c.at[0], c.at[1])
                   return (
-                    <text key={c.name.en} x={p[0]} y={p[1]} textAnchor="middle" className="iti-sea-label" style={{ fontSize: 13 * k }}>
+                    <text key={c.name.en} x={p[0]} y={p[1]} textAnchor="middle" className="iti-sea-label" opacity={seaReveal} style={{ fontSize: 12 * k }}>
                       {c.name[lang]}
                     </text>
                   )
                 })}
-              {plantsMode &&
+              {focusMarketObj?.depth === 'plants' &&
+                cityReveal > 0 &&
                 CITY_LABELS.filter((c) => c.market === focus).map((c) => {
                   const p = project(c.at[0], c.at[1])
                   const pos = CITY_LABEL_POS[c.name.en] ?? { dx: 0, dy: -19, anchor: 'middle' as const }
                   return (
-                    <motion.text
+                    <text
                       key={c.name.en}
-                      x={p[0] + pos.dx * k}
-                      y={p[1] + pos.dy * k}
+                      x={p[0] + pos.dx * k * 0.9}
+                      y={p[1] + pos.dy * k * 0.9}
                       textAnchor={pos.anchor}
                       className="iti-city-label"
-                      style={{ fontSize: 13 * k, strokeWidth: 4 * k }}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.15, duration: 0.3 }}
+                      opacity={cityReveal}
+                      style={{ fontSize: 11.5 * k, strokeWidth: 3.5 * k }}
                       pointerEvents="none"
                     >
                       {c.name[lang]}
-                    </motion.text>
+                    </text>
                   )
                 })}
 
@@ -1520,11 +1514,12 @@ export default function ItiFootprint({ lang }: Props) {
                   >
                     <g transform={`scale(${k})`}>
                       <circle r={16} fill="transparent" />
-                      {(isSel || isHover) && <circle r={16} fill="#e39a6b" opacity={0.35} className="iti-ping" />}
-                      {isSel && <circle r={17} fill="none" stroke="#e39a6b" strokeWidth={2} />}
-                      {asset.status === 'construction' && <circle r={13} fill="none" stroke="#ffffff" strokeWidth={1.4} strokeDasharray="2.5 2.5" />}
-                      <circle r={10.5} fill="#ffffff" />
-                      <circle className="iti-pin-core" r={isSel ? 8.5 : 7.5} fill={color} stroke="#053552" strokeWidth={2} />
+                      {(isSel || isHover) && <circle r={12} fill="#e39a6b" opacity={0.3} className="iti-ping" />}
+                      {isSel && <circle r={12.5} fill="none" stroke="#e39a6b" strokeWidth={1.6} />}
+                      {asset.status === 'construction' && <circle r={10} fill="none" stroke="#ffffff" strokeWidth={1.2} strokeDasharray="2 2" />}
+                      <circle r={9.6} fill="#021a2b" opacity={0.35} />
+                      <circle r={7.6} fill="#ffffff" />
+                      <circle className="iti-pin-core" r={isSel ? 6.2 : 5.4} fill={color} stroke="#053552" strokeWidth={1.6} />
                     </g>
                   </motion.g>
                 )
@@ -1636,7 +1631,10 @@ export default function ItiFootprint({ lang }: Props) {
         {/* ---------- RIGHT: markets + sectors ---------- */}
         <aside className="iti-map-panel iti-panel-scroll relative z-10 flex flex-col gap-10 border-t px-5 py-10 sm:px-8 lg:col-span-3 lg:overflow-y-auto lg:border-t-0 lg:border-s lg:pt-[116px] lg:pb-10">
           <div>
-            <p className="mb-4 text-[0.68rem] font-semibold tracking-[0.2em] uppercase text-[var(--iti-fp-soft)]">{t.markets[lang]}</p>
+            <p className="iti-panel-label mb-4">
+              {t.markets[lang]}
+              <span className="iti-panel-count" dir="ltr">{MARKETS.length}</span>
+            </p>
             <ul className="divide-y divide-white/10 border-y border-white/10">
               {MARKETS.map((m) => {
                 const active = focus === m.id
@@ -1654,8 +1652,8 @@ export default function ItiFootprint({ lang }: Props) {
                       onMouseEnter={() => !active && setHovered(m.id)}
                       onMouseLeave={() => setHovered(null)}
                       aria-pressed={active}
-                      className={`group relative flex w-full items-center gap-4 overflow-hidden py-4 text-start transition ${
-                        active || hot ? 'text-white' : 'text-[var(--iti-fp-soft)] hover:text-white'
+                      className={`iti-market-row group relative flex w-full items-center gap-4 overflow-hidden py-4 text-start transition ${
+                        active ? 'is-active text-white' : hot ? 'text-white' : 'text-[var(--iti-fp-soft)] hover:text-white'
                       }`}
                     >
                       <span
@@ -1687,7 +1685,7 @@ export default function ItiFootprint({ lang }: Props) {
           </div>
 
           <div>
-            <p className="mb-4 text-[0.68rem] font-semibold tracking-[0.2em] uppercase text-[var(--iti-fp-soft)]">{t.sectors[lang]}</p>
+            <p className="iti-panel-label mb-4">{t.sectors[lang]}</p>
             <div className="flex flex-wrap gap-2">
               <button type="button" onClick={() => setSector(null)} aria-pressed={sector === null} className={`iti-chip ${sector === null ? 'iti-chip-on' : ''}`}>
                 {t.allSectors[lang]}
@@ -1727,7 +1725,7 @@ export default function ItiFootprint({ lang }: Props) {
 /* ------------------------------------------------------------------ */
 
 /** A link leaving Barcelona: the route draws itself while a copper dot travels it */
-function RouteTrace({ d, k, reduceMotion }: { d: string; k: number; reduceMotion: boolean }) {
+function RouteTrace({ d, k, reduceMotion, strong = true }: { d: string; k: number; reduceMotion: boolean; strong?: boolean }) {
   const pathRef = useRef<SVGPathElement | null>(null)
   const dotRef = useRef<SVGCircleElement | null>(null)
 
@@ -1755,8 +1753,8 @@ function RouteTrace({ d, k, reduceMotion }: { d: string; k: number; reduceMotion
 
   return (
     <>
-      <path ref={pathRef} d={d} fill="none" stroke="#e39a6b" strokeWidth={2 * k} strokeLinecap="round" />
-      <circle ref={dotRef} r={4.2 * k} fill="#e39a6b" stroke="#ffffff" strokeWidth={1.6 * k} style={{ opacity: 0 }} />
+      <path ref={pathRef} d={d} fill="none" stroke="#e39a6b" strokeOpacity={strong ? 0.95 : 0.55} strokeWidth={(strong ? 1.4 : 1) * k} strokeLinecap="round" />
+      <circle ref={dotRef} r={(strong ? 3 : 2.2) * k} fill="#e39a6b" stroke="#ffffff" strokeWidth={1.2 * k} style={{ opacity: 0 }} />
     </>
   )
 }

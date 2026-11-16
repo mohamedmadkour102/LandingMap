@@ -444,15 +444,15 @@ button {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(60% 55% at 50% 48%, rgb(33 92 126 / 0.42), transparent 70%),
-    radial-gradient(40% 40% at 78% 82%, rgb(169 97 58 / 0.12), transparent 70%),
+    radial-gradient(55% 50% at 50% 48%, rgb(33 92 126 / 0.26), transparent 70%),
+    radial-gradient(40% 40% at 78% 82%, rgb(169 97 58 / 0.07), transparent 70%),
     linear-gradient(180deg, #03263c 0%, #021a2b 55%, #01131f 100%);
 }
 .iti-footprint-bg::after {
   content: '';
   position: absolute;
   inset: 0;
-  opacity: 0.05;
+  opacity: 0.03;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='76' viewBox='0 0 56 76'%3E%3Cpath d='M28 4 L50 18 L50 26 L41 26 L41 22 L35 18.5 L35 52 L28 56.5 L21 52 L21 18.5 L15 22 L15 26 L6 26 L6 18 Z M41 31 L50 31 L50 45 L41 50.5 Z M15 31 L6 31 L6 45 L15 50.5 Z' fill='none' stroke='%23ffffff' stroke-width='0.8' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-size: 56px 76px;
   mask-image: radial-gradient(70% 70% at 50% 50%, transparent 40%, black 100%);
@@ -463,13 +463,14 @@ button {
 
 /* Side panels float over the full-bleed globe */
 .iti-map-panel {
-  background: rgb(2 26 43 / 0.82);
+  /* solid on phones and tablets: the zoomed Earth must not show through the copy */
+  background: #021a2b;
   border-color: rgb(255 255 255 / 0.1);
 }
 @media (min-width: 1024px) {
   .iti-map-panel {
-    background: linear-gradient(180deg, rgb(3 38 60 / 0.55), rgb(2 26 43 / 0.35));
-    backdrop-filter: blur(6px);
+    background: linear-gradient(180deg, rgb(3 38 60 / 0.72), rgb(2 26 43 / 0.6));
+    backdrop-filter: blur(10px) saturate(0.8);
   }
 }
 .iti-footprint .iti-chip {
@@ -573,6 +574,95 @@ button {
 .iti-photo-in {
   animation: iti-photo-in 0.45s ease-out both;
 }
+/* Panel hierarchy: one label style, quiet counts, layer switches */
+.iti-panel-label {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--iti-fp-soft);
+}
+.iti-panel-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgb(255 255 255 / 0.14), transparent);
+}
+[dir='rtl'] .iti-panel-label::after {
+  background: linear-gradient(270deg, rgb(255 255 255 / 0.14), transparent);
+}
+.iti-panel-count {
+  order: 2;
+  min-width: 1.4rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.06);
+  color: #dbe7ee;
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+.iti-layer {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.7rem;
+  border: 1px solid transparent;
+  color: var(--iti-fp-soft);
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+}
+.iti-layer:hover,
+.iti-layer:focus-visible {
+  background: rgb(255 255 255 / 0.04);
+  color: #ffffff;
+}
+.iti-layer.is-on {
+  background: rgb(201 120 74 / 0.1);
+  border-color: rgb(227 154 107 / 0.35);
+  color: #ffffff;
+}
+.iti-layer-switch {
+  position: relative;
+  width: 1.65rem;
+  height: 0.95rem;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.12);
+  transition: background-color 0.2s;
+}
+.iti-layer-switch::after {
+  content: '';
+  position: absolute;
+  top: 0.15rem;
+  inset-inline-start: 0.15rem;
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 999px;
+  background: #cfe0ea;
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.2s;
+}
+.iti-layer.is-on .iti-layer-switch {
+  background: var(--iti-copper);
+}
+.iti-layer.is-on .iti-layer-switch::after {
+  background: #ffffff;
+  transform: translateX(0.7rem);
+}
+[dir='rtl'] .iti-layer.is-on .iti-layer-switch::after {
+  transform: translateX(-0.7rem);
+}
+.iti-market-row.is-active {
+  background: linear-gradient(90deg, rgb(255 255 255 / 0.05), transparent 85%);
+}
+[dir='rtl'] .iti-market-row.is-active {
+  background: linear-gradient(270deg, rgb(255 255 255 / 0.05), transparent 85%);
+}
+
 .iti-panel-scroll {
   scrollbar-width: thin;
   scrollbar-color: rgb(255 255 255 / 0.18) transparent;

@@ -76,7 +76,7 @@ const trim = (f) => {
 }
 const regions = countries50
   .filter((f) => f.geometry && intersects(f))
-  .map((f) => trim({ type: 'Feature', id: String(f.id), properties: {}, geometry: f.geometry }))
+  .map((f) => trim({ type: 'Feature', ...(f.id != null ? { id: String(f.id) } : {}), properties: {}, geometry: f.geometry }))
   .filter(Boolean)
 
 let topo = topology({ countries: { type: 'FeatureCollection', features: regions } })
