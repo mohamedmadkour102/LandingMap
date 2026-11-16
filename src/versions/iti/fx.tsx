@@ -2,7 +2,7 @@
  * ITI motion toolkit — small, reusable pieces of "quiet magic".
  * Everything here degrades to static content under prefers-reduced-motion.
  */
-import { useRef, type CSSProperties, type PointerEvent, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode, type RefObject } from 'react'
 import {
   motion,
   useMotionValue,
@@ -21,7 +21,11 @@ export const EASE_IN_OUT = [0.65, 0, 0.35, 1] as const
 /* SplitReveal — words rise out of a mask, one after another           */
 /* ------------------------------------------------------------------ */
 
-const lineParent: Variants = { hidden: {}, show: { transition: { staggerChildren: 0.055 } } }
+/** long statements stagger faster, so the whole line is readable within ~1.5s */
+const lineParent = (words: number, delay: number): Variants => ({
+  hidden: {},
+  show: { transition: { staggerChildren: Math.min(0.055, 0.55 / words), delayChildren: delay } },
+})
 const lineWord: Variants = {
   hidden: { y: '108%' },
   show: { y: '0%', transition: { duration: 0.95, ease: EASE_OUT } },
@@ -39,19 +43,58 @@ interface SplitRevealProps {
   id?: string
 }
 
+/**
+ * Shown once the element reaches the viewport — or once it is already above it.
+ * Two independent triggers (IntersectionObserver + a light scroll check), so copy can never
+ * stay hidden behind an animation that did not fire (fast jumps, HMR remounts, odd browsers).
+ */
+function useRevealed(ref: RefObject<HTMLElement | null>, immediate: boolean) {
+  const [shown, setShown] = useState(immediate)
+  useEffect(() => {
+    if (shown) return
+    const el = ref.current
+    if (!el) return
+    const check = () => {
+      const r = el.getBoundingClientRect()
+      if (r.top < window.innerHeight * 0.92) setShown(true)
+    }
+    let io: IntersectionObserver | null = null
+    if ('IntersectionObserver' in window) {
+      io = new IntersectionObserver((es) => es.some((e) => e.isIntersecting) && setShown(true), { rootMargin: '0px 0px -8% 0px' })
+      io.observe(el)
+    }
+    let raf = 0
+    const onScroll = () => {
+      cancelAnimationFrame(raf)
+      raf = requestAnimationFrame(check)
+    }
+    check()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll)
+    return () => {
+      io?.disconnect()
+      cancelAnimationFrame(raf)
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+    }
+  }, [ref, shown])
+  return shown
+}
+
 export function SplitReveal({ text, as = 'h2', className, emphasis = 0, delay = 0, immediate = false, id }: SplitRevealProps) {
   const reduce = useReducedMotion()
+  const ref = useRef<HTMLElement | null>(null)
+  const shown = useRevealed(ref, immediate || !!reduce)
   const words = text.split(' ')
   const Comp = as === 'h1' ? motion.h1 : as === 'p' ? motion.p : motion.h2
-  const trigger = immediate ? { animate: 'show' } : { whileInView: 'show', viewport: { once: true, margin: '0px 0px -12% 0px' } }
   return (
     <Comp
+      ref={ref as never}
       id={id}
       className={className}
-      variants={lineParent}
+      variants={lineParent(words.length, delay)}
       initial={reduce ? false : 'hidden'}
-      {...trigger}
-      transition={{ delayChildren: delay }}
+      animate={shown ? 'show' : 'hidden'}
     >
       {words.map((w, i) => (
         <span key={`${w}-${i}`}>
@@ -75,7 +118,7 @@ export function SplitReveal({ text, as = 'h2', className, emphasis = 0, delay = 
 /* ------------------------------------------------------------------ */
 
 function LitWord({ word, progress, from, to }: { word: string; progress: MotionValue<number>; from: number; to: number }) {
-  const opacity = useTransform(progress, [from, to], [0.16, 1])
+  const opacity = useTransform(progress, [from, to], [0.38, 1])
   return (
     <>
       <motion.span style={{ opacity }}>{word}</motion.span>{' '}
