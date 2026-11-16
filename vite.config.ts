@@ -10,4 +10,9 @@ export default defineConfig({
       '@': path.resolve(import.meta.dirname, './src'),
     },
   },
+  server: {
+    host: true,
+    // true = allow any Host header (needed for Cloudflare/ngrok quick tunnels)
+    allowedHosts: true,
+  },
 })

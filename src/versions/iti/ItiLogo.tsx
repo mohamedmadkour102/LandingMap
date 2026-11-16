@@ -160,6 +160,7 @@ export function IconOutline({ className, stroke = 'currentColor', strokeWidth = 
           strokeWidth={strokeWidth}
           vectorEffect="non-scaling-stroke"
           strokeLinejoin="miter"
+          pathLength={1}
         />
       ))}
     </svg>
