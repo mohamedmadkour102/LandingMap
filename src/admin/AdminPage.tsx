@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import ItiLogo from '../versions/iti/ItiLogo'
 import { ASSETS, CONTACT, COPY, MARKETS, SECTORS } from '../versions/iti/content'
 import { Card, PairFields, PhotoField, TextField, type Pair } from './fields'
+import { photoUrl } from '../versions/iti/media'
 
 type SectionId = 'hero' | 'about' | 'vision' | 'values' | 'markets' | 'sites' | 'contact'
 
@@ -67,7 +68,7 @@ type Draft = {
 
 function seed(): Draft {
   return {
-    hero: { ...COPY.hero, photo: '/iti/photos/hero.jpg' },
+    hero: { ...COPY.hero, photo: photoUrl('hero', 1600) },
     about: {
       eyebrow: COPY.about.eyebrow,
       title: COPY.about.title,
@@ -76,7 +77,7 @@ function seed(): Draft {
       highlights: COPY.about.highlights.map((h) => ({ ...h })),
     },
     stats: COPY.stats.map((s) => ({ value: String(s.value), prefix: s.prefix, suffix: s.suffix, label: { ...s.label } })),
-    vision: { ...COPY.vision, photo: '/iti/photos/vision.jpg' },
+    vision: { ...COPY.vision, photo: photoUrl('bmic-night', 1600) },
     mission: { ...COPY.mission },
     values: {
       eyebrow: COPY.values.eyebrow,
@@ -91,7 +92,7 @@ function seed(): Draft {
       headline: { ...m.headline },
       summary: { ...m.summary },
       points: (m.points ?? []).map((p) => ({ ...p })),
-      photo: m.photo,
+      photo: photoUrl(m.photo),
       illustrative: m.illustrative,
     })),
     sites: ASSETS.map((a) => ({
@@ -102,7 +103,7 @@ function seed(): Draft {
       milestone: { ...a.milestone },
       investment: a.investment ?? '',
       about: { ...a.about },
-      photo: a.photo,
+      photo: photoUrl(a.photo),
       logo: a.logo,
       url: a.url,
       status: a.status,
@@ -117,7 +118,7 @@ function seed(): Draft {
       cta: COPY.contact.cta,
       email: CONTACT.email,
       website: CONTACT.website,
-      photo: '/iti/photos/contact.jpg',
+      photo: photoUrl('sesco-silos', 960),
     },
   }
 }

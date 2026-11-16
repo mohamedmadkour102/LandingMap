@@ -25,3 +25,8 @@ dist-ssr
 *.sw?
 
 iti guideline/
+
+# Raw client asset pack (source library only — the site loads curated copies from public/iti)
+Neusoft - ITI Website/
+# Logos rendered from the pack's .ai/.pdf by scripts/render-vector-logos.py
+scripts/.staged/

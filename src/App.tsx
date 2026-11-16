@@ -1,9 +1,9 @@
 import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router-dom'
 import { lazy, Suspense } from 'react'
 import { ConceptSwitcher } from './components/ConceptSwitcher'
-import HomePage from './pages/HomePage'
 
 const ItiPage = lazy(() => import('./versions/iti/ItiPage'))
+const HomePage = lazy(() => import('./pages/HomePage'))
 const AdminPage = lazy(() => import('./admin/AdminPage'))
 const V1Page = lazy(() => import('./versions/v1/V1Page'))
 const V2Page = lazy(() => import('./versions/v2/V2Page'))
