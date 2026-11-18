@@ -245,9 +245,6 @@ const LIGHT = (() => {
 const CANVAS_PAD_X = 0.16
 const CANVAS_PAD_Y = 0.22
 
-/** Map layers a visitor can preview from the legend; otherwise arcs only appear in context */
-type Layer = 'lanes' | 'hq'
-
 /** Zoom disclosure: 0 at the whole globe → 1 at a market frame (log scale, like the camera) */
 const zoomLevel = (s: number) => clamp01(Math.log(s / GLOBE_R) / Math.log(2.6))
 const smoothstep = (a: number, b: number, x: number) => {
@@ -305,8 +302,7 @@ type Tip = { key: string; x: number; y: number } & (
   | { kind: 'hq' }
 )
 
-const LAND_ZOOM = '#124a68'
-const LAND_ZOOM_STROKE = 'rgba(190, 216, 232, 0.22)'
+const LAND_ZOOM_STROKE = 'rgba(233, 179, 143, 0.28)'
 const MARKET_ZOOM = 'rgba(201, 120, 74, 0.14)'
 
 export default function ItiFootprint({ lang }: Props) {
@@ -345,9 +341,6 @@ export default function ItiFootprint({ lang }: Props) {
   const earthRef = useRef<EarthRenderer | null>(null)
   const [glFailed, setGlFailed] = useState(false)
   const texAt = useRef<number | null>(null)
-  /** legend preview (hover / focus) and pinned layer (click — the touch path) */
-  const [layerPeek, setLayerPeek] = useState<Layer | null>(null)
-  const [layerPin, setLayerPin] = useState<Layer | null>(null)
   const coordRef = useRef<HTMLSpanElement | null>(null)
   const introStarted = useRef(false)
   const revealStart = useRef<number | null>(reduceMotion ? -1e9 : null)
@@ -565,11 +558,14 @@ export default function ItiFootprint({ lang }: Props) {
   const plantsMode = focusMarketObj?.depth === 'plants' && settled
   /** pins and city labels arrive during the flight, not after it */
   const plantsVisible = focusMarketObj?.depth === 'plants' && pinsReady
-  const layer = layerPeek ?? layerPin
-  /** arcs in context: the hovered market's head-office link; the export lanes with Egypt; or a legend layer */
-  const showLanes = !focus && (layer === 'lanes' || hovered === 'egypt')
-  const hqRouteFor = (id: MarketId) => !focus && (layer === 'hq' || hqHover || hovered === id)
+  /** export lanes stay on for the overview globe; HQ links still appear in context on hover */
+  const showLanes = !focus
+  const hqRouteFor = (id: MarketId) => !focus && (hqHover || hovered === id)
   const hoveredAsset = hoveredAssetId ? ASSETS.find((a) => a.id === hoveredAssetId) ?? null : null
+
+  useEffect(() => {
+    if (selected && sector != null && selected.sector !== sector) setSelected(null)
+  }, [sector, selected])
 
   /* ---------------- canvas: the Earth (WebGL) ---------------- */
 
@@ -670,7 +666,7 @@ export default function ItiFootprint({ lang }: Props) {
 
   /**
    * Photos only after a market is open — the overview globe must look complete on its own.
-   * A duotone (navy → copper cream) keeps every client photo in one brand key.
+   * Site photos render naturally (no duotone / color wash) so the plant reads as itself.
    */
   const overviewMarket = overview ? MARKETS.find((m) => m.id === overview)! : null
 
@@ -742,7 +738,7 @@ export default function ItiFootprint({ lang }: Props) {
       key = overviewMarket.id
     }
     if (!src) return null
-    const cardLeft = W * 0.975 - Math.min(350, 0.39 * boxW) * (W / boxW)
+    const cardLeft = W * 0.975 - Math.min(420, 0.44 * boxW) * (W / boxW)
     if (cardLeft < src[0] + 30) return null
     const ty = Math.min(H * 0.66, Math.max(H * 0.34, src[1]))
     const mx = src[0] + (cardLeft - src[0]) * 0.55
@@ -948,12 +944,19 @@ export default function ItiFootprint({ lang }: Props) {
                     <div className="mt-6 hidden lg:block">
                       <p className="iti-panel-label mb-2">
                         {t.sitesList[lang]}
-                        <span className="iti-panel-count" dir="ltr">{ASSETS.filter((a) => a.market === focusMarketObj.id).length}</span>
+                        <span className="iti-panel-count" dir="ltr">
+                          {
+                            ASSETS.filter(
+                              (a) => a.market === focusMarketObj.id && (sector == null || a.sector === sector),
+                            ).length
+                          }
+                        </span>
                       </p>
                       <ul className="divide-y divide-white/10 border-y border-white/10">
-                        {ASSETS.filter((a) => a.market === focusMarketObj.id).map((a) => {
+                        {ASSETS.filter(
+                          (a) => a.market === focusMarketObj.id && (sector == null || a.sector === sector),
+                        ).map((a) => {
                           const on = selected?.id === a.id
-                          const dim = sector != null && sector !== a.sector
                           return (
                             <li key={a.id}>
                               <button
@@ -964,7 +967,7 @@ export default function ItiFootprint({ lang }: Props) {
                                 onFocus={() => setHoveredAssetId(a.id)}
                                 onBlur={() => setHoveredAssetId(null)}
                                 aria-pressed={on}
-                                className={`group flex w-full items-center gap-3 py-2.5 text-start transition ${dim ? 'opacity-40' : ''} ${
+                                className={`group flex w-full items-center gap-3 py-2.5 text-start transition ${
                                   on ? 'text-white' : 'text-[var(--iti-fp-soft)] hover:text-white'
                                 }`}
                               >
@@ -1005,61 +1008,6 @@ export default function ItiFootprint({ lang }: Props) {
                     <span className="iti-pulse-dot" aria-hidden />
                     {touch ? t.hintTouch[lang] : t.hint[lang]}
                   </p>
-                  <p className="iti-panel-label mt-9">{t.layers[lang]}</p>
-                  <ul className="mt-3 space-y-1.5 text-[0.78rem]">
-                    {(
-                      [
-                        {
-                          id: 'lanes' as const,
-                          label: t.lanes[lang],
-                          icon: (
-                            <svg width="34" height="10" aria-hidden>
-                              <path d="M1 8 Q17 -2 33 8" fill="none" stroke="#d9895a" strokeWidth="1.4" />
-                              <circle cx="25" cy="4.6" r="1.8" fill="#ffd9bd" />
-                            </svg>
-                          ),
-                        },
-                        {
-                          id: 'hq' as const,
-                          label: t.hqLinks[lang],
-                          icon: (
-                            <svg width="34" height="10" aria-hidden>
-                              <path d="M1 5 H33" fill="none" stroke="#9fc3d8" strokeOpacity="0.7" strokeWidth="1.1" strokeDasharray="2 4" />
-                            </svg>
-                          ),
-                        },
-                      ] satisfies { id: Layer; label: string; icon: ReactNode }[]
-                    ).map((l) => {
-                      const on = layerPin === l.id
-                      return (
-                        <li key={l.id}>
-                          <button
-                            type="button"
-                            aria-pressed={on}
-                            onClick={() => setLayerPin((cur) => (cur === l.id ? null : l.id))}
-                            onMouseEnter={() => setLayerPeek(l.id)}
-                            onMouseLeave={() => setLayerPeek(null)}
-                            onFocus={() => setLayerPeek(l.id)}
-                            onBlur={() => setLayerPeek(null)}
-                            className={`iti-layer ${on ? 'is-on' : ''}`}
-                          >
-                            {l.icon}
-                            <span className="flex-1 text-start">{l.label}</span>
-                            <span className="iti-layer-switch" aria-hidden />
-                          </button>
-                        </li>
-                      )
-                    })}
-                    <li className="flex items-center gap-3 px-3 py-2 text-[var(--iti-fp-soft)]">
-                      <span className="flex w-[34px] justify-center gap-[3px]" aria-hidden>
-                        {[0, 1, 2, 3].map((i) => (
-                          <span key={i} className="h-[4px] w-[4px] rounded-full bg-[#e39a6b]" />
-                        ))}
-                      </span>
-                      {t.markets[lang]}
-                    </li>
-                  </ul>
-                  <p className="mt-3 px-3 text-[0.68rem] text-[var(--iti-fp-soft)]/80">{touch ? t.layersHintTouch[lang] : t.layersHint[lang]}</p>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -1103,14 +1051,6 @@ export default function ItiFootprint({ lang }: Props) {
                 </radialGradient>
                 <filter id={`${uid}-soft`} x="-40%" y="-40%" width="180%" height="180%">
                   <feGaussianBlur stdDeviation="2.2" />
-                </filter>
-                <filter id={`${uid}-duo`} colorInterpolationFilters="sRGB">
-                  <feColorMatrix type="matrix" values="0.2126 0.7152 0.0722 0 0 0.2126 0.7152 0.0722 0 0 0.2126 0.7152 0.0722 0 0 0 0 0 1 0" />
-                  <feComponentTransfer>
-                    <feFuncR type="table" tableValues="0.01 0.1 0.45 0.97" />
-                    <feFuncG type="table" tableValues="0.1 0.3 0.6 0.9" />
-                    <feFuncB type="table" tableValues="0.17 0.45 0.7 0.84" />
-                  </feComponentTransfer>
                 </filter>
               </defs>
 
@@ -1176,7 +1116,7 @@ export default function ItiFootprint({ lang }: Props) {
 
                 // a market: a faint copper wash on the globe; a hairline border with a whisper of tint when zoomed
                 const globeFill = isHot ? 'rgba(227,154,107,0.26)' : 'rgba(201,120,74,0.1)'
-                const zoomFill = isPhoto ? LAND_ZOOM : isFocus ? 'rgba(239,201,164,0.05)' : MARKET_ZOOM
+                const zoomFill = isPhoto ? 'transparent' : isFocus ? 'rgba(239,201,164,0.05)' : MARKET_ZOOM
                 return (
                   <g key={iso} className="cursor-pointer">
                     <path
@@ -1209,9 +1149,9 @@ export default function ItiFootprint({ lang }: Props) {
                 )
               })}
 
-              {/* the open market's photo, clipped to its borders, in the brand duotone */}
+              {/* the open market's photo, clipped to its borders — natural colour, no tint */}
               {photo && photoBounds && photoIsos.length > 0 && (
-                <g pointerEvents="none" opacity={0.88}>
+                <g pointerEvents="none">
                   <defs>
                     <clipPath id={`${uid}-clip`}>
                       {visibleCountries
@@ -1231,21 +1171,14 @@ export default function ItiFootprint({ lang }: Props) {
                     height={Math.max(1, photoBounds[1][1] - photoBounds[0][1])}
                     preserveAspectRatio="xMidYMid slice"
                     clipPath={`url(#${uid}-clip)`}
-                    filter={`url(#${uid}-duo)`}
                   />
                   {visibleCountries
                     .filter((c) => photoIsos.includes(c.iso))
                     .map((c) => (
-                      <path key={`edge-${c.iso}`} d={c.d} fill="none" stroke="#e9b38f" strokeWidth={1.6} strokeLinejoin="round" />
+                      <path key={`edge-${c.iso}`} d={c.d} fill="none" stroke="rgba(255,255,255,0.55)" strokeWidth={1.4} strokeLinejoin="round" />
                     ))}
                 </g>
               )}
-
-              {/* navy wash over a plant photo keeps pins and labels readable */}
-              {photo &&
-                visibleCountries
-                  .filter((c) => photoIsos.includes(c.iso))
-                  .map((c) => <path key={`wash-${c.iso}`} d={c.d} fill="#021a2b" fillOpacity={0.28} pointerEvents="none" />)}
 
               {/* hairline limb — the shader carries the light and the atmosphere */}
               {round > 0 && <path d={sphereD} fill="none" stroke="#bfe0f2" strokeOpacity={0.16 * round} strokeWidth={0.6} pointerEvents="none" />}
@@ -1480,17 +1413,18 @@ export default function ItiFootprint({ lang }: Props) {
                 )}
               </AnimatePresence>
 
-              {/* zoomed: site pins */}
-              {pins.map(({ asset, x, y }, i) => {
+              {/* zoomed: site pins — coloured by sector; filtered pins are hidden */}
+              {pins
+                .filter(({ asset }) => sector == null || asset.sector === sector)
+                .map(({ asset, x, y }, i) => {
                 const color = SECTORS[asset.sector].color
                 const isSel = selected?.id === asset.id
                 const isHover = hoveredAssetId === asset.id
-                const dim = sector != null && sector !== asset.sector
                 return (
                   <motion.g
                     key={asset.id}
                     initial={{ opacity: 0, scale: 0.4 }}
-                    animate={{ opacity: dim ? 0.22 : 1, scale: isHover && !isSel ? 1.18 : 1 }}
+                    animate={{ opacity: 1, scale: isHover && !isSel ? 1.18 : 1 }}
                     transition={{ delay: isHover ? 0 : 0.04 + i * 0.045, type: 'spring', stiffness: 420, damping: 22 }}
                     style={{ x, y, cursor: 'pointer' }}
                     role="button"
@@ -1514,12 +1448,11 @@ export default function ItiFootprint({ lang }: Props) {
                   >
                     <g transform={`scale(${k})`}>
                       <circle r={16} fill="transparent" />
-                      {(isSel || isHover) && <circle r={12} fill="#e39a6b" opacity={0.3} className="iti-ping" />}
-                      {isSel && <circle r={12.5} fill="none" stroke="#e39a6b" strokeWidth={1.6} />}
-                      {asset.status === 'construction' && <circle r={10} fill="none" stroke="#ffffff" strokeWidth={1.2} strokeDasharray="2 2" />}
-                      <circle r={9.6} fill="#021a2b" opacity={0.35} />
-                      <circle r={7.6} fill="#ffffff" />
-                      <circle className="iti-pin-core" r={isSel ? 6.2 : 5.4} fill={color} stroke="#053552" strokeWidth={1.6} />
+                      {(isSel || isHover) && <circle r={13} fill={color} opacity={0.28} className="iti-ping" />}
+                      {isSel && <circle r={13} fill="none" stroke={color} strokeWidth={1.8} />}
+                      {asset.status === 'construction' && <circle r={10.5} fill="none" stroke="#ffffff" strokeWidth={1.2} strokeDasharray="2 2" />}
+                      <circle r={8.2} fill={color} stroke="#ffffff" strokeWidth={2} className="iti-pin-core" />
+                      <circle r={isSel ? 3.2 : 2.6} fill="#ffffff" opacity={0.95} />
                     </g>
                   </motion.g>
                 )
@@ -1703,6 +1636,9 @@ export default function ItiFootprint({ lang }: Props) {
                 </button>
               ))}
             </div>
+            <p className="mt-3 text-[0.68rem] leading-relaxed text-[var(--iti-fp-soft)]/85">
+              {plantsMode ? t.sectorsHintActive[lang] : t.sectorsHint[lang]}
+            </p>
             <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-xs text-[var(--iti-fp-soft)]">
               <span className="inline-flex items-center gap-2">
                 <span className="h-3 w-3 rounded-full border-2 border-white bg-[var(--iti-navy)]" aria-hidden />
@@ -1776,7 +1712,7 @@ function SideCard({ rtl, children }: { rtl: boolean; children: ReactNode }) {
   return (
     <div
       dir={rtl ? 'rtl' : 'ltr'}
-      className="iti-sheet fixed inset-x-3 bottom-3 z-40 max-h-[74svh] overflow-y-auto overscroll-contain rounded-2xl md:absolute md:inset-x-auto md:top-1/2 md:right-[2.5%] md:bottom-auto md:max-h-[calc(100%-1rem)] md:w-[min(350px,39%)] md:-translate-y-1/2"
+      className="iti-sheet fixed inset-x-3 bottom-3 z-40 max-h-[74svh] overflow-y-auto overscroll-contain rounded-2xl md:absolute md:inset-x-auto md:top-1/2 md:right-[2.5%] md:bottom-auto md:max-h-[calc(100%-1rem)] md:w-[min(420px,44%)] md:-translate-y-1/2"
       role="dialog"
     >
       <motion.div
@@ -1797,7 +1733,7 @@ function CloseButton({ onClose, label }: { onClose: () => void; label: string })
       type="button"
       onClick={onClose}
       aria-label={label}
-      className="absolute top-2.5 end-2.5 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-[var(--iti-navy)]/80 text-white backdrop-blur transition hover:bg-[var(--iti-navy)]"
+      className="absolute top-3 end-3 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-[var(--iti-line)] bg-white text-[var(--iti-navy)] transition hover:border-[var(--iti-navy)] hover:bg-[var(--iti-mist)]"
     >
       <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" aria-hidden>
         <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
@@ -1841,74 +1777,91 @@ function AssetCard({
   const t = COPY.footprint
   const sector = SECTORS[asset.sector]
   const hasSite = asset.url !== PLACEHOLDER_URL
+  const statusLabel = asset.status === 'operational' ? t.operational[lang] : t.construction[lang]
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-white text-[var(--iti-navy)] shadow-[0_30px_70px_-24px_rgba(0,0,0,0.7)] ring-1 ring-white/10">
-      <CloseButton onClose={onClose} label={t.close[lang]} />
-      <div className="relative h-36 overflow-hidden bg-[var(--iti-navy)]">
-        <Picture k={asset.photo} sizes="330px" className="h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" />
-        <span
-          className={`absolute bottom-2.5 start-2.5 rounded-full px-2.5 py-1 text-[0.62rem] font-semibold tracking-wide ${
-            asset.status === 'operational' ? 'bg-white text-[var(--iti-navy)]' : 'bg-[var(--iti-copper)] text-white'
-          }`}
-        >
-          {asset.status === 'operational' ? t.operational[lang] : t.construction[lang]}
-        </span>
-        {asset.illustrative && <IllustrativeTag label={t.illustrative[lang]} />}
-      </div>
+    <div className="relative overflow-hidden rounded-2xl bg-white text-[var(--iti-navy)] shadow-[0_30px_70px_-24px_rgba(0,0,0,0.7)] ring-1 ring-black/5">
       <div className="h-1" style={{ background: `linear-gradient(90deg, ${sector.color}, #a9613a)` }} aria-hidden />
-      <div className="p-4 pb-3">
-        <div className="flex items-center gap-3">
-          <Logo asset={asset} />
-          <div className="min-w-0">
-            {asset.parent && <p className="truncate text-[0.66rem] font-semibold tracking-[0.08em] uppercase text-[var(--iti-copper)]">{asset.parent}</p>}
-            <h3 className="font-[family-name:var(--iti-head)] text-[1.04rem] leading-tight font-bold">{asset.name}</h3>
-            <p className="mt-0.5 text-xs text-[var(--iti-ink-soft)]">{asset.city[lang]}</p>
-          </div>
+      <CloseButton onClose={onClose} label={t.close[lang]} />
+      <div className="px-5 pt-5 pb-4 pe-12">
+        <div className="flex flex-wrap items-center gap-2">
+          {asset.parent && (
+            <p className="text-[0.68rem] font-semibold tracking-[0.1em] uppercase text-[var(--iti-copper)]">{asset.parent}</p>
+          )}
+          <span
+            className={`rounded-full px-2.5 py-0.5 text-[0.62rem] font-semibold tracking-wide ${
+              asset.status === 'operational'
+                ? 'bg-[var(--iti-mist)] text-[var(--iti-navy)]'
+                : 'bg-[var(--iti-copper)] text-white'
+            }`}
+          >
+            {statusLabel}
+          </span>
+          {asset.illustrative && (
+            <span className="rounded-full bg-black/5 px-2.5 py-0.5 text-[0.58rem] font-medium tracking-wide text-[var(--iti-ink-soft)]">
+              {t.illustrative[lang]}
+            </span>
+          )}
         </div>
-        {asset.headline && <p className="mt-3 font-[family-name:var(--iti-head)] text-[0.95rem] leading-snug font-semibold">{asset.headline[lang]}</p>}
-        <p className="mt-2 text-[0.68rem] font-semibold tracking-[0.12em] uppercase text-[var(--iti-steel)]">
-          {asset.kind[lang]}
-          <span className="font-medium tracking-normal normal-case text-[var(--iti-ink-soft)]">
+
+        <h3 className="mt-2.5 font-[family-name:var(--iti-head)] text-[1.35rem] leading-tight font-bold tracking-[-0.01em]">
+          {asset.name}
+        </h3>
+        <p className="mt-1 text-sm text-[var(--iti-ink-soft)]">{asset.city[lang]}</p>
+
+        <p className="mt-3 text-[0.72rem] leading-relaxed text-[var(--iti-steel)]">
+          <span className="font-semibold tracking-[0.08em] uppercase">{asset.kind[lang]}</span>
+          <span className="text-[var(--iti-ink-soft)]">
             {' · '}
             {asset.milestone[lang]}
             {asset.investment ? ` · ${asset.investment}` : ''}
           </span>
         </p>
+
+        {asset.headline && (
+          <p className="mt-4 font-[family-name:var(--iti-head)] text-[1.05rem] leading-snug font-semibold">
+            {asset.headline[lang]}
+          </p>
+        )}
+
         {asset.facts && asset.facts.length > 0 && (
-          <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2.5 rounded-xl bg-[#f3f6f7] p-3">
+          <dl className="mt-5 border-t border-[var(--iti-line)]">
             {asset.facts.map((fact) => (
-              <div key={fact.k.en} className="min-w-0">
-                <dt className="text-[0.6rem] font-semibold tracking-[0.1em] uppercase text-[var(--iti-ink-soft)]">{fact.k[lang]}</dt>
-                <dd className="mt-0.5 text-[0.8rem] leading-snug font-semibold">{fact.v[lang]}</dd>
+              <div
+                key={fact.k.en}
+                className="flex items-baseline justify-between gap-4 border-b border-[var(--iti-line)] py-2.5"
+              >
+                <dt className="shrink-0 text-[0.65rem] font-semibold tracking-[0.1em] uppercase text-[var(--iti-ink-soft)]">
+                  {fact.k[lang]}
+                </dt>
+                <dd className="text-end text-[0.9rem] leading-snug font-semibold">{fact.v[lang]}</dd>
               </div>
             ))}
           </dl>
         )}
 
-        <p className="mt-3 text-[0.8rem] leading-relaxed text-[var(--iti-ink-soft)]">{asset.about[lang]}</p>
+        <p className="mt-5 text-[0.88rem] leading-[1.65] text-[var(--iti-ink-soft)]">{asset.about[lang]}</p>
 
         {hasSite && (
           <a
             href={asset.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="group mt-4 inline-flex items-center gap-2 text-xs font-semibold text-[var(--iti-copper)] hover:text-[var(--iti-navy)]"
+            className="group mt-5 inline-flex items-center gap-2 border-b border-[var(--iti-copper)] pb-0.5 text-sm font-semibold text-[var(--iti-copper)] transition hover:border-[var(--iti-navy)] hover:text-[var(--iti-navy)]"
           >
             {t.visit[lang]}
             <span className="font-normal text-[var(--iti-ink-soft)]" dir="ltr">
               {asset.url.replace(/^https?:\/\/(www\.)?/, '')}
             </span>
-            <svg viewBox="0 0 16 16" className="h-3 w-3 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5 rtl:-scale-x-100" aria-hidden>
+            <svg viewBox="0 0 16 16" className="h-3.5 w-3.5 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5 rtl:-scale-x-100" aria-hidden>
               <path d="M5 11L11 5M6 5h5v5" stroke="currentColor" strokeWidth="1.7" fill="none" strokeLinecap="round" />
             </svg>
           </a>
         )}
       </div>
       {total > 1 && (
-        <div className="flex items-center justify-between border-t border-[var(--iti-line)] px-4 py-2.5">
+        <div className="flex items-center justify-between border-t border-[var(--iti-line)] px-5 py-3">
           <StepButton onClick={onPrev} label={t.prev[lang]} flip={lang === 'ar'} />
-          <span dir="ltr" className="text-[0.7rem] font-semibold tabular-nums text-[var(--iti-ink-soft)]">
+          <span dir="ltr" className="text-[0.75rem] font-semibold tabular-nums text-[var(--iti-ink-soft)]">
             {index + 1} / {total}
           </span>
           <StepButton onClick={onNext} label={t.next[lang]} flip={lang !== 'ar'} />
@@ -1922,26 +1875,6 @@ function IllustrativeTag({ label }: { label: string }) {
   return (
     <span className="absolute top-2.5 start-2.5 rounded-full bg-black/45 px-2 py-0.5 text-[0.58rem] font-medium tracking-wide text-white/90 backdrop-blur">
       {label}
-    </span>
-  )
-}
-
-function Logo({ asset }: { asset: Asset }) {
-  const sector = SECTORS[asset.sector]
-  if (asset.logo) {
-    return (
-      <span className="flex h-12 w-16 shrink-0 items-center justify-center rounded-lg border border-[var(--iti-line)] bg-white p-1.5">
-        <img src={asset.logo} alt={`${asset.name} logo`} className="max-h-full max-w-full object-contain" loading="lazy" />
-      </span>
-    )
-  }
-  return (
-    <span
-      className="flex h-12 w-16 shrink-0 items-center justify-center rounded-lg text-[0.7rem] font-extrabold tracking-[0.08em] text-white"
-      style={{ background: `linear-gradient(135deg, ${sector.color}, #053552)` }}
-      aria-hidden
-    >
-      {asset.monogram}
     </span>
   )
 }

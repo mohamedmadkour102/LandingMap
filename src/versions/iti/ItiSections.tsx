@@ -9,12 +9,12 @@ import {
   useScroll,
   useSpring,
   useTransform,
-  type MotionValue,
   type Variants,
 } from 'framer-motion'
 import { Reveal } from '../../components/Reveal'
 import { useCountUp } from '../../hooks/useCountUp'
-import ItiLogo, { ICON_FRAME, ICON_SHAPES } from './ItiLogo'
+import ItiLogo from './ItiLogo'
+import AboutStructure from './AboutStructure'
 import { Picture } from './media'
 import { requestAsset } from './mapBus'
 import { EASE_IN_OUT, EASE_OUT, Magnetic, SplitReveal } from './fx'
@@ -123,7 +123,7 @@ export function ItiHero({ lang }: { lang: Lang }) {
         }}
       />
       <div className="absolute inset-0 -z-10 bg-[rgb(5_53_82/0.04)]" />
-      <div className="absolute inset-x-0 bottom-0 -z-10 h-40 bg-gradient-to-t from-[var(--iti-ink-deep)]/50 to-transparent" />
+      <div className="absolute inset-x-0 bottom-0 -z-10 h-40 bg-gradient-to-t from-[var(--iti-navy)]/60 via-[var(--iti-navy)]/20 to-transparent" />
       <div className="absolute inset-x-0 top-0 -z-10 h-32 bg-gradient-to-b from-[var(--iti-ink-deep)]/28 to-transparent" />
 
       <motion.div
@@ -235,54 +235,8 @@ function Arrow({ rtl, className = '' }: { rtl: boolean; className?: string }) {
 
 /* ------------------------------------------------------------------ */
 /* About — one Mist Gray band: headline and lead, the Group in five    */
-/* figures, the mark as living copper geometry, then the three pillars */
+/* figures, the symbol as an engineered structure, then the pillars    */
 /* ------------------------------------------------------------------ */
-
-/** The icon in copper outline: draws itself, one champagne sweep runs the stroke, a faint glow settles behind the roof */
-function AboutMark({
-  reduce,
-  sectionRef,
-  px,
-  py,
-}: {
-  reduce: boolean
-  sectionRef: RefObject<HTMLElement | null>
-  px: MotionValue<number>
-  py: MotionValue<number>
-}) {
-  const [drawn, setDrawn] = useState(false)
-  const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ['start end', 'end start'],
-  })
-  const drift = useTransform(scrollYProgress, [0, 0.5, 1], [36, 0, -36])
-  return (
-    <motion.div
-      className="pointer-events-none relative ms-auto mb-8 h-32 w-fit sm:h-44 lg:absolute lg:end-8 lg:top-0 lg:mb-0 lg:h-[360px] xl:end-16 xl:h-[400px]"
-      style={reduce ? undefined : { y: drift }}
-      onViewportEnter={() => setDrawn(true)}
-      viewport={{ once: true, margin: '-10% 0px' }}
-      aria-hidden
-    >
-      <motion.div className={`iti-mark relative h-full ${drawn || reduce ? 'is-drawn' : ''}`} style={reduce ? undefined : { x: px, y: py }}>
-        {/* ambient warmth behind the roof */}
-        <span className="iti-mark-glow absolute start-[8%] top-[-6%] h-[62%] w-[84%] rounded-full blur-2xl [background:radial-gradient(closest-side,rgb(212_137_95/0.22),transparent)]" />
-        <svg viewBox={ICON_FRAME} className="relative h-full w-auto overflow-visible" fill="none">
-          <g className="iti-mark-base" stroke="var(--iti-copper)" strokeOpacity={0.6} strokeWidth={1.3} strokeLinejoin="miter">
-            {ICON_SHAPES.map((p) => (
-              <polygon key={p.slice(0, 12)} points={p} pathLength={1} vectorEffect="non-scaling-stroke" />
-            ))}
-          </g>
-          <g className="iti-mark-sweep" stroke="#f0c9a2" strokeWidth={2.4} strokeLinecap="round">
-            {ICON_SHAPES.map((p) => (
-              <polygon key={p.slice(0, 12)} points={p} pathLength={1} vectorEffect="non-scaling-stroke" />
-            ))}
-          </g>
-        </svg>
-      </motion.div>
-    </motion.div>
-  )
-}
 
 /** Count-up driven by the strip's own reveal (reduced motion: the final value, at once) */
 function StatCount({ value, start, still }: { value: number; start: boolean; still: boolean }) {
@@ -360,7 +314,7 @@ export function ItiAbout({ lang }: { lang: Lang }) {
     <section
       id="about"
       ref={ref}
-      className="relative overflow-hidden bg-[var(--iti-mist)] py-24 sm:py-32"
+      className="iti-about relative overflow-hidden py-24 sm:py-32"
       onPointerMove={(e) => {
         if (reduce || e.pointerType !== 'mouse' || window.innerWidth < 1024) return
         const r = e.currentTarget.getBoundingClientRect()
@@ -375,7 +329,7 @@ export function ItiAbout({ lang }: { lang: Lang }) {
       <div className="relative mx-auto max-w-[1400px] px-5 sm:px-8">
         {/* headline block; on desktop the mark lives beside it, sized to it, so it never reaches the figures */}
         <div className="relative lg:min-h-[360px] xl:min-h-[400px]">
-          <AboutMark reduce={reduce} sectionRef={ref} px={px} py={py} />
+          <AboutStructure reduce={reduce} sectionRef={ref} px={px} py={py} />
           <div className="relative lg:max-w-[66%]">
             <Reveal>
               <p className="iti-eyebrow">{t.eyebrow[lang]}</p>
@@ -515,7 +469,7 @@ function PurposeRibbons({ reduce }: { reduce: boolean }) {
   return (
     <motion.div
       ref={ref}
-      className={`iti-ribbons pointer-events-none absolute inset-y-0 end-0 -z-10 w-full opacity-45 sm:w-[80%] lg:w-[48%] lg:opacity-100 ${lit || reduce ? 'is-lit' : ''}`}
+      className={`iti-ribbons pointer-events-none absolute -inset-y-16 end-0 -z-10 w-full opacity-45 sm:w-[80%] lg:w-[48%] lg:opacity-100 ${lit || reduce ? 'is-lit' : ''}`}
       style={reduce ? undefined : { y }}
       onViewportEnter={() => setLit(true)}
       viewport={{ once: true, margin: '-15% 0px' }}
@@ -526,7 +480,7 @@ function PurposeRibbons({ reduce }: { reduce: boolean }) {
           <linearGradient id="rb-face" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0" stopColor="#14507a" />
             <stop offset="0.55" stopColor="#082f4a" />
-            <stop offset="1" stopColor="#03192a" />
+            <stop offset="1" style={{ stopColor: 'var(--iti-ribbon-floor)' }} />
           </linearGradient>
           <linearGradient id="rb-edge" gradientUnits="userSpaceOnUse" x1="250" y1="1000" x2="800" y2="0">
             <stop offset="0" stopColor="#c27448" stopOpacity="0" />
@@ -568,7 +522,7 @@ function PurposeRibbons({ reduce }: { reduce: boolean }) {
             </g>
           </g>
         ))}
-        <path d={`${fwd(E[3])} L800 1000 Z`} fill="#03192a" className="iti-ribbon-face" />
+        <path d={`${fwd(E[3])} L800 1000 Z`} style={{ fill: 'var(--iti-ribbon-floor)' }} className="iti-ribbon-face" />
 
         {/* copper light along the leading edges — a soft bloom under a crisp line */}
         {E.map((e, i) => (
@@ -619,7 +573,7 @@ export function ItiVision({ lang }: { lang: Lang }) {
     <section id="vision" className="iti-grain iti-purpose relative isolate overflow-hidden py-24 text-white sm:py-32 lg:py-40">
       <PurposeRibbons reduce={reduce} />
       {/* keeps the copy side calm on narrow screens, where the ribbons sit behind the text */}
-      <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgb(3_30_48/0.92)_0%,rgb(3_30_48/0.55)_60%,transparent_100%)] lg:hidden rtl:bg-[linear-gradient(270deg,rgb(3_30_48/0.92)_0%,rgb(3_30_48/0.55)_60%,transparent_100%)]" />
+      <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgb(5_53_82/0.92)_0%,rgb(5_53_82/0.55)_60%,transparent_100%)] lg:hidden rtl:bg-[linear-gradient(270deg,rgb(5_53_82/0.92)_0%,rgb(5_53_82/0.55)_60%,transparent_100%)]" />
 
       <div className="mx-auto max-w-[1400px] px-5 sm:px-8">
         <div className="lg:max-w-[62%]">
@@ -1254,9 +1208,19 @@ function LineIcon({ children, className = '' }: { children: ReactNode; className
 type FormValues = Record<string, string>
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
+const formFieldItem = {
+  hidden: { opacity: 0, y: 14 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: EASE_OUT } },
+}
+const formFieldsParent = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.06, delayChildren: 0.08 } },
+}
+
 function Field({ id, label, required, error, children, className = '' }: { id: string; label: string; required?: boolean; error?: string; children: ReactNode; className?: string }) {
-  return (
-    <div className={className}>
+  const reduce = !!useReducedMotion()
+  const body = (
+    <>
       <label htmlFor={id} className="block text-[0.86rem] font-semibold text-[var(--iti-navy)]">
         {label}
         {required && (
@@ -1280,7 +1244,13 @@ function Field({ id, label, required, error, children, className = '' }: { id: s
           </motion.p>
         )}
       </AnimatePresence>
-    </div>
+    </>
+  )
+  if (reduce) return <div className={className}>{body}</div>
+  return (
+    <motion.div className={className} variants={formFieldItem}>
+      {body}
+    </motion.div>
   )
 }
 
@@ -1373,28 +1343,69 @@ function InquiryForm({ lang }: { lang: Lang }) {
   return (
     <AnimatePresence mode="wait" initial={false}>
       {done ? (
-        <motion.div key="done" role="status" className="py-6" {...fade}>
-          <span className="flex h-12 w-12 items-center justify-center rounded-full border border-[var(--iti-copper)]/40 text-[var(--iti-copper)]" aria-hidden>
+        <motion.div
+          key="done"
+          role="status"
+          className="py-6"
+          initial={reduce ? false : { opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={reduce ? undefined : { opacity: 0, y: -8 }}
+          transition={{ duration: 0.35, ease: EASE_OUT }}
+        >
+          <motion.span
+            className="flex h-12 w-12 items-center justify-center rounded-full border border-[var(--iti-copper)]/40 text-[var(--iti-copper)]"
+            aria-hidden
+            initial={reduce ? false : { scale: 0.7, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: 'spring', stiffness: 380, damping: 22 }}
+          >
             <svg viewBox="0 0 16 16" className="h-4 w-4">
-              <path d="M3 8.5l3 3 7-7" stroke="currentColor" strokeWidth="1.7" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+              <motion.path
+                d="M3 8.5l3 3 7-7"
+                stroke="currentColor"
+                strokeWidth="1.7"
+                fill="none"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                initial={reduce ? false : { pathLength: 0 }}
+                animate={{ pathLength: 1 }}
+                transition={{ duration: 0.55, ease: EASE_OUT, delay: reduce ? 0 : 0.12 }}
+              />
             </svg>
-          </span>
-          <h3 className="mt-6 font-[family-name:var(--iti-head)] text-[1.45rem] leading-snug font-bold text-[var(--iti-navy)]">{f.doneTitle[lang]}</h3>
-          <p className="mt-3 max-w-[52ch] text-[0.98rem] leading-[1.7] text-[var(--iti-ink-soft)]">
+          </motion.span>
+          <motion.h3
+            className="mt-6 font-[family-name:var(--iti-head)] text-[1.45rem] leading-snug font-bold text-[var(--iti-navy)]"
+            initial={reduce ? false : { opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, ease: EASE_OUT, delay: reduce ? 0 : 0.22 }}
+          >
+            {f.doneTitle[lang]}
+          </motion.h3>
+          <motion.p
+            className="mt-3 max-w-[52ch] text-[0.98rem] leading-[1.7] text-[var(--iti-ink-soft)]"
+            initial={reduce ? false : { opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, ease: EASE_OUT, delay: reduce ? 0 : 0.32 }}
+          >
             {f.doneBody[lang]}{' '}
             <a href={`mailto:${CONTACT.email}`} className="font-semibold text-[var(--iti-navy)] underline decoration-[var(--iti-copper)]/50 underline-offset-4" dir="ltr">
               {CONTACT.email}
             </a>
             .
-          </p>
-          <div className="mt-8 flex flex-wrap items-center gap-5">
+          </motion.p>
+          <motion.div
+            className="mt-8 flex flex-wrap items-center gap-5"
+            initial={reduce ? false : { opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: EASE_OUT, delay: reduce ? 0 : 0.42 }}
+          >
             <button type="button" onClick={copyInquiry} className="iti-btn iti-btn-outline" aria-live="polite">
               {copied ? f.copiedInquiry[lang] : f.copyInquiry[lang]}
             </button>
             <button type="button" onClick={() => setDone(false)} className="iti-text-btn">
               {f.edit[lang]}
             </button>
-          </div>
+          </motion.div>
         </motion.div>
       ) : (
         <motion.form key="form" ref={formRef} noValidate onSubmit={submit} {...fade}>
@@ -1406,22 +1417,31 @@ function InquiryForm({ lang }: { lang: Lang }) {
               </span>
             </legend>
             <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
-              {INQUIRIES.map((q) => (
-                <label key={q.id} className={`iti-type ${topic === q.id ? 'is-on' : ''} ${errors.topic ? 'is-invalid' : ''}`}>
-                  <input
-                    type="radio"
-                    name="topic"
-                    value={q.id}
-                    checked={topic === q.id}
-                    onChange={() => pick(q.id)}
-                    className="sr-only"
-                    aria-describedby={errors.topic ? 'cf-topic-error' : undefined}
-                  />
-                  <span className="iti-type-dot" aria-hidden />
-                  <LineIcon className="iti-type-icon h-9 w-9">{INQUIRY_ICONS[q.id]}</LineIcon>
-                  <span className="mt-3 block text-center font-[family-name:var(--iti-head)] text-[0.92rem] leading-snug font-bold text-[var(--iti-navy)]">{q.title[lang]}</span>
-                </label>
-              ))}
+              {INQUIRIES.map((q) => {
+                const on = topic === q.id
+                return (
+                  <motion.label
+                    key={q.id}
+                    className={`iti-type ${on ? 'is-on' : ''} ${errors.topic ? 'is-invalid' : ''}`}
+                    whileTap={reduce ? undefined : { scale: 0.97 }}
+                    animate={reduce ? undefined : on ? { scale: [1, 1.035, 1] } : { scale: 1 }}
+                    transition={on && !reduce ? { type: 'spring', stiffness: 420, damping: 20, duration: 0.45 } : { duration: 0.2 }}
+                  >
+                    <input
+                      type="radio"
+                      name="topic"
+                      value={q.id}
+                      checked={on}
+                      onChange={() => pick(q.id)}
+                      className="sr-only"
+                      aria-describedby={errors.topic ? 'cf-topic-error' : undefined}
+                    />
+                    <span className="iti-type-dot" aria-hidden />
+                    <LineIcon className="iti-type-icon h-9 w-9">{INQUIRY_ICONS[q.id]}</LineIcon>
+                    <span className="mt-3 block text-center font-[family-name:var(--iti-head)] text-[0.92rem] leading-snug font-bold text-[var(--iti-navy)]">{q.title[lang]}</span>
+                  </motion.label>
+                )
+              })}
             </div>
             {errors.topic && (
               <p id="cf-topic-error" className="mt-2 text-[0.78rem] text-[#a3412b]">
@@ -1459,7 +1479,12 @@ function InquiryForm({ lang }: { lang: Lang }) {
             )}
           </AnimatePresence>
 
-          <div className="mt-7 grid gap-x-6 gap-y-5 sm:grid-cols-2">
+          <motion.div
+            className="mt-7 grid gap-x-6 gap-y-5 sm:grid-cols-2"
+            initial={reduce ? false : 'hidden'}
+            animate="show"
+            variants={reduce ? undefined : formFieldsParent}
+          >
             <Field id="cf-name" label={f.name[lang]} required error={errors.name}>
               <input id="cf-name" autoComplete="name" placeholder={f.namePh[lang]} value={values.name ?? ''} onChange={(e) => set('name', e.target.value)} className={cls('name')} {...aria('name')} />
             </Field>
@@ -1500,20 +1525,21 @@ function InquiryForm({ lang }: { lang: Lang }) {
                 {...aria('message')}
               />
             </Field>
-          </div>
-
-          <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
-            <button type="submit" className="iti-btn iti-btn-navy group shrink-0 self-start">
-              {f.submit[lang]}
-              <Arrow rtl={lang === 'ar'} />
-            </button>
-            <p className="max-w-[46ch] text-[0.78rem] leading-relaxed text-[var(--iti-ink-soft)]">{f.submitNote[lang]}</p>
-          </div>
-          {tried && Object.keys(errors).length > 0 && (
-            <p role="alert" className="mt-4 text-[0.82rem] font-medium text-[#a3412b]">
-              {f.errors.summary[lang]}
-            </p>
-          )}
+            <motion.div className="sm:col-span-2" variants={reduce ? undefined : formFieldItem}>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
+                <button type="submit" className="iti-btn iti-btn-navy group shrink-0 self-start">
+                  {f.submit[lang]}
+                  <Arrow rtl={lang === 'ar'} />
+                </button>
+                <p className="max-w-[46ch] text-[0.78rem] leading-relaxed text-[var(--iti-ink-soft)]">{f.submitNote[lang]}</p>
+              </div>
+              {tried && Object.keys(errors).length > 0 && (
+                <p role="alert" className="mt-4 text-[0.82rem] font-medium text-[#a3412b]">
+                  {f.errors.summary[lang]}
+                </p>
+              )}
+            </motion.div>
+          </motion.div>
         </motion.form>
       )}
     </AnimatePresence>
@@ -1641,7 +1667,7 @@ export function ItiFooter({ lang }: { lang: Lang }) {
   const t = COPY.footer
   const nav = COPY.nav
   return (
-    <footer className="relative bg-[var(--iti-navy-deep)] text-white">
+    <footer className="relative bg-[var(--iti-surface-dark)] text-white">
       <div className="mx-auto flex max-w-[1400px] flex-col gap-10 px-5 py-14 sm:px-8 md:flex-row md:items-end md:justify-between">
         <div>
           <ItiLogo tone="white" layout="horizontal" className="h-[56px] w-[224px]" />

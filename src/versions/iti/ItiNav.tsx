@@ -13,9 +13,7 @@ const LINKS = [
   { href: '#contact', key: 'contact' },
 ] as const
 
-/** Sections with a night background — the bar turns to dark glass over them */
-const NIGHT = new Set(['vision', 'footprint'])
-
+/** One bar for the whole page: transparent over the hero's top, then navy glass everywhere — it never changes identity mid-scroll */
 export default function ItiNav({ lang }: { lang: Lang }) {
   const t = COPY.nav
   const [solid, setSolid] = useState(false)
@@ -47,13 +45,10 @@ export default function ItiNav({ lang }: { lang: Lang }) {
   const { scrollYProgress } = useScroll()
   const progress = useSpring(scrollYProgress, { stiffness: 140, damping: 28, mass: 0.4 })
 
-  const night = solid && !open && active != null && NIGHT.has(active)
-  const light = (solid || open) && !night
-
   return (
     <header
-      className={`fixed inset-x-0 top-0 z-50 transition-[background,box-shadow,backdrop-filter] duration-500 ${
-        open ? 'iti-nav-open' : night ? 'iti-nav-glass-night' : light ? 'iti-nav-glass' : 'bg-transparent'
+      className={`fixed inset-x-0 top-0 z-50 transition-[background,box-shadow,backdrop-filter] duration-500 motion-reduce:transition-none ${
+        open ? 'iti-nav-open' : solid ? 'iti-nav-glass-night' : 'bg-transparent'
       }`}
     >
       {solid && (
@@ -63,13 +58,8 @@ export default function ItiNav({ lang }: { lang: Lang }) {
         <a href="#top" aria-label="ITI Group" className="shrink-0">
           {/* Full horizontal logo at its 220px digital minimum (guideline p.14);
               below that, the simplified logo without the descriptor (p.16). */}
-          <ItiLogo tone={light ? 'color' : 'white'} layout="horizontal" className="hidden h-[56px] w-[224px] sm:block" />
-          <ItiLogo
-            tone={light ? 'color' : 'white'}
-            layout="horizontal"
-            descriptor={false}
-            className="h-9 w-[150px] sm:hidden"
-          />
+          <ItiLogo tone="white" layout="horizontal" className="hidden h-[56px] w-[224px] sm:block" />
+          <ItiLogo tone="white" layout="horizontal" descriptor={false} className="h-9 w-[150px] sm:hidden" />
         </a>
 
         <ul className="hidden items-center gap-7 lg:flex">
@@ -79,20 +69,14 @@ export default function ItiNav({ lang }: { lang: Lang }) {
                 href={l.href}
                 aria-current={active === l.key ? 'true' : undefined}
                 className={`relative py-2 text-[0.82rem] font-medium transition ${
-                  light
-                    ? active === l.key
-                      ? 'text-[var(--iti-navy)]'
-                      : 'text-[var(--iti-ink-soft)] hover:text-[var(--iti-navy)]'
-                    : active === l.key && solid
-                      ? 'text-white'
-                      : 'text-white/75 hover:text-white'
+                  active === l.key && solid ? 'text-white' : 'text-white/75 hover:text-white'
                 }`}
               >
                 {t[l.key][lang]}
                 {solid && active === l.key && (
                   <motion.span
                     layoutId="iti-nav-active"
-                    className="absolute inset-x-0 -bottom-0.5 mx-auto h-[2px] w-full rounded-full bg-[var(--iti-copper)]"
+                    className="absolute inset-x-0 -bottom-0.5 mx-auto h-[2px] w-full rounded-full bg-[var(--iti-copper-soft)]"
                     transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                   />
                 )}
@@ -105,18 +89,14 @@ export default function ItiNav({ lang }: { lang: Lang }) {
           <Link
             to={`/${other}`}
             lang={other}
-            className={`rounded-full border px-4 py-2 text-[0.8rem] font-semibold transition ${
-              light
-                ? 'border-[var(--iti-line)] text-[var(--iti-navy)] hover:border-[var(--iti-navy)]'
-                : 'border-white/35 text-white hover:border-white'
-            }`}
+            className="rounded-full border border-white/35 px-4 py-2 text-[0.8rem] font-semibold text-white transition hover:border-white"
             style={{ fontFamily: other === 'ar' ? 'IBM Plex Sans Arabic, sans-serif' : 'Figtree, sans-serif' }}
           >
             {t.switchLang[lang]}
           </Link>
           <button
             type="button"
-            className={`flex h-10 w-10 items-center justify-center rounded-full lg:hidden ${light ? 'text-[var(--iti-navy)]' : 'text-white'}`}
+            className="flex h-10 w-10 items-center justify-center rounded-full text-white lg:hidden"
             aria-expanded={open}
             aria-label={open ? t.close[lang] : t.menu[lang]}
             onClick={() => setOpen((o) => !o)}
@@ -138,14 +118,14 @@ export default function ItiNav({ lang }: { lang: Lang }) {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="overflow-hidden border-t border-[var(--iti-line)] bg-white px-5 lg:hidden"
+            className="overflow-hidden border-t border-white/10 px-5 lg:hidden"
           >
             {LINKS.map((l) => (
               <li key={l.key}>
                 <a
                   href={l.href}
                   onClick={() => setOpen(false)}
-                  className="block border-b border-[var(--iti-line)] py-4 text-base font-semibold text-[var(--iti-navy)] last:border-0"
+                  className="block border-b border-white/10 py-4 text-base font-semibold text-white last:border-0"
                 >
                   {t[l.key][lang]}
                 </a>

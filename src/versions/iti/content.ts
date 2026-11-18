@@ -34,13 +34,14 @@ export const BRAND = {
 
 export type SectorId = 'cement-plants' | 'cement-terminals' | 'metals' | 'port-terminals'
 
+/** Sector colours — readable on the map pins and matched 1:1 on the chips */
 export const SECTORS: Record<SectorId, { color: string; label: L }> = {
   'cement-plants': {
-    color: '#514338',
+    color: '#c4a574',
     label: { en: 'Cement Plants', ar: 'مصانع الأسمنت' },
   },
   'cement-terminals': {
-    color: '#776e64',
+    color: '#9a9086',
     label: { en: 'Cement Terminals', ar: 'محطات الأسمنت' },
   },
   metals: {
@@ -48,7 +49,7 @@ export const SECTORS: Record<SectorId, { color: string; label: L }> = {
     label: { en: 'Non-Ferrous Metals', ar: 'المعادن غير الحديدية' },
   },
   'port-terminals': {
-    color: '#a1b4d8',
+    color: '#7ea0d4',
     label: { en: 'Port Terminals', ar: 'المحطات البحرية' },
   },
 }
@@ -931,6 +932,14 @@ export const COPY = {
     markets: { en: 'Markets', ar: 'الأسواق' },
     sectors: { en: 'Sectors', ar: 'القطاعات' },
     allSectors: { en: 'All', ar: 'الكل' },
+    sectorsHint: {
+      en: 'Zoom into a market to filter sites by sector. Pin colours match these chips.',
+      ar: 'كبّر على سوق لتصفية المواقع حسب القطاع. ألوان النقاط تطابق هذه الشارات.',
+    },
+    sectorsHintActive: {
+      en: 'Filtering sites on the map and in the list.',
+      ar: 'تصفية المواقع على الخريطة وفي القائمة.',
+    },
     back: { en: 'Back to globe', ar: 'العودة إلى الكرة الأرضية' },
     investment: { en: 'Total investment', ar: 'إجمالي الاستثمار' },
     sites: { en: 'sites', ar: 'مواقع' },
