@@ -14,7 +14,7 @@ const LINKS = [
 ] as const
 
 /** Sections with a night background — the bar turns to dark glass over them */
-const NIGHT = new Set(['vision', 'footprint', 'contact'])
+const NIGHT = new Set(['vision', 'footprint'])
 
 export default function ItiNav({ lang }: { lang: Lang }) {
   const t = COPY.nav
@@ -52,18 +52,14 @@ export default function ItiNav({ lang }: { lang: Lang }) {
 
   return (
     <header
-      className={`fixed inset-x-0 top-0 z-50 transition-[background,box-shadow] duration-300 ${
-        night
-          ? 'bg-[rgba(2,26,43,0.72)] shadow-[0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-md'
-          : light
-            ? 'bg-white/90 shadow-[0_1px_0_rgba(5,53,82,0.1)] backdrop-blur-md'
-            : 'bg-transparent'
+      className={`fixed inset-x-0 top-0 z-50 transition-[background,box-shadow,backdrop-filter] duration-500 ${
+        open ? 'iti-nav-open' : night ? 'iti-nav-glass-night' : light ? 'iti-nav-glass' : 'bg-transparent'
       }`}
     >
       {solid && (
         <motion.div className="iti-progress absolute inset-x-0 bottom-0 h-[2px] origin-left rtl:origin-right" style={{ scaleX: progress }} aria-hidden />
       )}
-      <nav className="mx-auto flex h-[76px] max-w-[1400px] items-center justify-between gap-6 px-5 sm:px-8">
+      <nav className={`mx-auto flex max-w-[1400px] items-center justify-between gap-6 px-5 transition-[height] duration-500 sm:px-8 ${solid ? 'h-[68px]' : 'h-[76px]'}`}>
         <a href="#top" aria-label="ITI Group" className="shrink-0">
           {/* Full horizontal logo at its 220px digital minimum (guideline p.14);
               below that, the simplified logo without the descriptor (p.16). */}

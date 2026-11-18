@@ -55,10 +55,11 @@ type Draft = {
     countries: Pair
     photo: string
   }
-  about: { eyebrow: Pair; title: Pair; body: Pair; highlightsTitle: Pair; highlights: Pair[] }
+  about: { eyebrow: Pair; title: Pair; lead: Pair; definesTitle: Pair; pillars: { title: Pair; body: Pair }[] }
   stats: Stat[]
-  vision: { eyebrow: Pair; kicker: Pair; body: Pair; photo: string }
-  mission: { eyebrow: Pair; kicker: Pair; body: Pair }
+  purpose: { eyebrow: Pair; title: Pair; lead: Pair }
+  vision: { eyebrow: Pair; headline: Pair; body: Pair }
+  mission: { eyebrow: Pair; headline: Pair; body: Pair }
   values: { eyebrow: Pair; title: Pair; items: ValueItem[] }
   footprint: { eyebrow: Pair; title: Pair; body: Pair }
   markets: MarketDraft[]
@@ -72,12 +73,13 @@ function seed(): Draft {
     about: {
       eyebrow: COPY.about.eyebrow,
       title: COPY.about.title,
-      body: COPY.about.body,
-      highlightsTitle: COPY.about.highlightsTitle,
-      highlights: COPY.about.highlights.map((h) => ({ ...h })),
+      lead: COPY.about.lead,
+      definesTitle: COPY.about.definesTitle,
+      pillars: COPY.about.pillars.map((p) => ({ title: { ...p.title }, body: { ...p.body } })),
     },
     stats: COPY.stats.map((s) => ({ value: String(s.value), prefix: s.prefix, suffix: s.suffix, label: { ...s.label } })),
-    vision: { ...COPY.vision, photo: photoUrl('bmic-night', 1600) },
+    purpose: { ...COPY.purpose },
+    vision: { ...COPY.vision },
     mission: { ...COPY.mission },
     values: {
       eyebrow: COPY.values.eyebrow,
@@ -242,16 +244,21 @@ function AboutEditor({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) =
         <div className="flex flex-col gap-5">
           <PairFields label="Eyebrow" value={about.eyebrow} onChange={(eyebrow) => set({ eyebrow })} />
           <PairFields label="Title" value={about.title} onChange={(title) => set({ title })} />
-          <PairFields label="Body" value={about.body} onChange={(body) => set({ body })} area />
-          <PairFields label="Highlights title" value={about.highlightsTitle} onChange={(highlightsTitle) => set({ highlightsTitle })} />
-          {about.highlights.map((h, i) => (
-            <PairFields
-              key={i}
-              label={`Highlight ${i + 1}`}
-              value={h}
-              onChange={(next) => set({ highlights: about.highlights.map((item, n) => (n === i ? next : item)) })}
-            />
-          ))}
+          <PairFields label="Lead" value={about.lead} onChange={(lead) => set({ lead })} area />
+        </div>
+      </Card>
+      <Card>
+        <div className="flex flex-col gap-5">
+          <PairFields label="Pillars title" value={about.definesTitle} onChange={(definesTitle) => set({ definesTitle })} />
+          {about.pillars.map((pl, i) => {
+            const setPillar = (patch: Partial<typeof pl>) => set({ pillars: about.pillars.map((item, n) => (n === i ? { ...item, ...patch } : item)) })
+            return (
+              <div key={i} className="flex flex-col gap-3 border-t border-[rgba(5,53,82,0.08)] pt-5">
+                <PairFields label={`Pillar ${i + 1}`} value={pl.title} onChange={(title) => setPillar({ title })} />
+                <PairFields label="Supporting line" value={pl.body} onChange={(body) => setPillar({ body })} area />
+              </div>
+            )
+          })}
         </div>
       </Card>
       <Card>
@@ -287,17 +294,21 @@ function VisionEditor({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) 
   return (
     <>
       <Card>
-        <PhotoField src={draft.vision.photo} onChange={(photo) => setDraft({ ...draft, vision: { ...draft.vision, photo } })} />
+        <div className="flex flex-col gap-5">
+          <PairFields label="Eyebrow" value={draft.purpose.eyebrow} onChange={(eyebrow) => setDraft({ ...draft, purpose: { ...draft.purpose, eyebrow } })} />
+          <PairFields label="Title" value={draft.purpose.title} onChange={(title) => setDraft({ ...draft, purpose: { ...draft.purpose, title } })} />
+          <PairFields label="Lead" value={draft.purpose.lead} onChange={(lead) => setDraft({ ...draft, purpose: { ...draft.purpose, lead } })} />
+        </div>
       </Card>
-      {(['vision', 'mission'] as const).map((key) => {
+      {(['mission', 'vision'] as const).map((key) => {
         const block = draft[key]
         const set = (patch: Partial<typeof block>) => setDraft({ ...draft, [key]: { ...block, ...patch } })
         return (
           <Card key={key}>
             <div className="flex flex-col gap-5">
               <PairFields label="Eyebrow" value={block.eyebrow} onChange={(eyebrow) => set({ eyebrow })} />
-              <PairFields label="Kicker" value={block.kicker} onChange={(kicker) => set({ kicker })} />
-              <PairFields label="Statement" value={block.body} onChange={(body) => set({ body })} area />
+              <PairFields label="Headline" value={block.headline} onChange={(headline) => set({ headline })} area />
+              <PairFields label="Supporting line" value={block.body} onChange={(body) => set({ body })} area />
             </div>
           </Card>
         )

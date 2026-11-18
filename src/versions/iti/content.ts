@@ -730,7 +730,8 @@ export const BUSINESS_GROUPS: { id: string; title: L; items: Business[] }[] = [
         name: 'European Co.',
         location: { en: 'Al Dekheila Port, Egypt', ar: 'ميناء الدخيلة، مصر' },
         headline: { en: 'Connecting cement to global markets', ar: 'نربط الأسمنت بالأسواق العالمية' },
-        logo: '/iti/logos/european.png',
+        // white background keyed out (colour-to-alpha) so the mark sits on Mist Gray
+        logo: '/iti/logos/european-clear.png',
         monogram: 'EUR',
         asset: 'european',
       },
@@ -739,7 +740,8 @@ export const BUSINESS_GROUPS: { id: string; title: L; items: Business[] }[] = [
         name: 'SESCO Cement',
         location: { en: 'Houston · Tampa, USA', ar: 'هيوستن · تامبا، الولايات المتحدة' },
         headline: { en: 'Cement import, terminals and distribution', ar: 'استيراد الأسمنت ومحطاته وتوزيعه' },
-        logo: '/iti/logos/sesco.png',
+        // white background keyed out (colour-to-alpha) so the mark sits on Mist Gray
+        logo: '/iti/logos/sesco-clear.png',
         monogram: 'SES',
         asset: 'sesco-houston',
       },
@@ -786,64 +788,87 @@ export const COPY = {
     ctaSecondary: { en: 'About ITI Group', ar: 'تعرّف على المجموعة' },
     countries: { en: 'Egypt · United States · Saudi Arabia · United Kingdom · Poland · Netherlands · Italy', ar: 'مصر · الولايات المتحدة · السعودية · المملكة المتحدة · بولندا · هولندا · إيطاليا' },
     scroll: { en: 'Scroll', ar: 'مرّر' },
-    photoCaption: { en: 'Royal El Minya Cement · El Minya, Egypt', ar: 'أسمنت المنيا رويال · المنيا، مصر' },
+    /** Background slider — real Group sites only (photos from the Neusoft brand pack), Egypt and the U.S. alternating */
+    slides: [
+      { photo: 'hero', pos: '62% 50%', caption: { en: 'Royal El Minya Cement · El Minya, Egypt', ar: 'أسمنت المنيا رويال · المنيا، مصر' } },
+      { photo: 'sesco-houston', pos: '50% 55%', caption: { en: 'SESCO Cement · Houston, Texas', ar: 'SESCO للأسمنت · هيوستن، تكساس' } },
+      { photo: 'amreyah-aerial', pos: '50% 60%', caption: { en: 'Amreyah Cement · Alexandria, Egypt', ar: 'أسمنت العامرية · الإسكندرية، مصر' } },
+      { photo: 'sesco-tampa', pos: '55% 55%', caption: { en: 'SESCO Cement · Tampa, Florida', ar: 'SESCO للأسمنت · تامبا، فلوريدا' } },
+      { photo: 'cleopatra', pos: '50% 50%', caption: { en: 'Cleopatra Cement · Samalout, El Minya', ar: 'أسمنت كليوباترا · سمالوط، المنيا' } },
+      { photo: 'bmic', pos: '60% 50%', caption: { en: 'BMIC · Assiut, Egypt', ar: 'BMIC · أسيوط، مصر' } },
+    ] as { photo: string; pos: string; caption: L }[],
   },
   about: {
     eyebrow: { en: 'About Us', ar: 'من نحن' },
-    title: { en: 'An integrated industrial group, built over five decades.', ar: 'مجموعة صناعية متكاملة، بُنيت على مدى خمسة عقود.' },
+    /** a newline marks the display line break; the last words carry the copper accent */
+    title: { en: 'An integrated industrial group\nwith a lasting legacy.', ar: 'مجموعة صناعية متكاملة\nذات إرثٍ راسخ.' },
     lead: {
-      en: 'ITI Group is a global industrial platform driving strategic investments across infrastructure, building materials, mining, and non-ferrous metals.',
-      ar: 'مجموعة ITI منصة صناعية عالمية تقود استثمارات استراتيجية في البنية التحتية ومواد البناء والتعدين والمعادن غير الحديدية.',
+      en: 'Rooted in Egypt and operating across North America, Europe and the Middle East, ITI Group builds and runs the industrial businesses that infrastructure depends on — and invests in them for the long term.',
+      ar: 'انطلاقًا من مصر، وبعمليات في أمريكا الشمالية وأوروبا والشرق الأوسط، تبني مجموعة ITI وتدير الأعمال الصناعية التي تقوم عليها البنية التحتية، وتستثمر فيها على المدى الطويل.',
     },
-    body: {
-      en: 'With more than 50 years of excellence, over $2 billion in annual revenue, and operations across five continents, ITI Group combines extensive industrial experience, global reach, and diversified capabilities to build and advance industries that create lasting value.',
-      ar: 'بأكثر من 50 عامًا من التميّز، وإيرادات سنوية تتجاوز ملياري دولار، وعمليات في خمس قارات، تجمع مجموعة ITI بين خبرة صناعية واسعة وحضور عالمي وقدرات متنوعة، لتبني صناعات وتطوّرها بما يصنع قيمة تدوم.',
-    },
-    highlightsTitle: { en: 'Key Highlights', ar: 'أبرز الملامح' },
-    highlights: [
-      { en: 'Long-standing industrial investor in Egypt', ar: 'مستثمر صناعي راسخ في مصر' },
-      { en: 'Vertically integrated cement production and logistics network', ar: 'شبكة متكاملة رأسيًا لإنتاج الأسمنت والخدمات اللوجستية' },
-      { en: 'Global operations across North America, Europe & the Middle East', ar: 'عمليات عالمية في أمريكا الشمالية وأوروبا والشرق الأوسط' },
-      { en: 'Strong contributor to infrastructure development', ar: 'مساهم فاعل في تطوير البنية التحتية' },
-      { en: 'Multi-billion industrial portfolio', ar: 'محفظة صناعية بمليارات الدولارات' },
-    ] as L[],
-    photoCaption: { en: 'Amreyah Cement · Alexandria', ar: 'أسمنت العامرية · الإسكندرية' },
-    secondCaption: { en: 'BMIC · Assiut, at dusk', ar: 'BMIC · أسيوط عند الغسق' },
-    badge: {
-      companies: { en: 'Group companies', ar: 'شركات المجموعة' },
-      regions: { en: 'Regions', ar: 'مناطق' },
-      sites: { en: 'Sites on the map', ar: 'موقعًا على الخريطة' },
-    },
-    scale: { en: 'Five decades of industry', ar: 'خمسة عقود من الصناعة' },
+    definesTitle: { en: 'Built to endure', ar: 'بُنيت لتدوم' },
+    pillars: [
+      {
+        title: { en: 'Diversified industrial portfolio', ar: 'محفظة صناعية متنوعة' },
+        body: {
+          en: 'Infrastructure, building materials, mining and non-ferrous metals under one Group.',
+          ar: 'البنية التحتية ومواد البناء والتعدين والمعادن غير الحديدية تحت مظلة مجموعة واحدة.',
+        },
+      },
+      {
+        title: { en: 'Integrated capabilities', ar: 'قدرات متكاملة' },
+        body: {
+          en: 'From production to storage, logistics and distribution — the value chain run end to end.',
+          ar: 'من الإنتاج إلى التخزين والخدمات اللوجستية والتوزيع، ندير سلسلة القيمة من بدايتها إلى نهايتها.',
+        },
+      },
+      {
+        title: { en: 'Long-term value creation', ar: 'قيمة تدوم على المدى الطويل' },
+        body: {
+          en: 'Patient, strategic investment in businesses built to last for their markets and communities.',
+          ar: 'استثمار استراتيجي طويل الأمد في أعمال تُبنى لتدوم لأسواقها ومجتمعاتها.',
+        },
+      },
+    ] as { title: L; body: L }[],
   },
+  /** Group figures — a snapshot strip in About */
   stats: [
-    { value: 50, prefix: '', suffix: '+', label: { en: 'Years of Excellence', ar: 'عامًا من التميّز' } },
+    { value: 50, prefix: '', suffix: '+', label: { en: 'Years of Experience', ar: 'عامًا من الخبرة' } },
     { value: 2, prefix: '$', suffix: 'B+', label: { en: 'Annual Revenue', ar: 'إيرادات سنوية' } },
-    { value: 5, prefix: '', suffix: '', label: { en: 'Continents of Operations', ar: 'قارات نعمل فيها' } },
     { value: 8500, prefix: '', suffix: '', label: { en: 'Employees', ar: 'موظف' } },
+    { value: 5, prefix: '', suffix: '', label: { en: 'Continents of Operations', ar: 'قارات نعمل فيها' } },
     { value: 40, prefix: '', suffix: 'M', label: { en: 'Tons of Materials Handled', ar: 'طن من المواد المُتداولة' } },
   ] as { value: number; prefix: string; suffix: string; label: L }[],
-  vision: {
-    eyebrow: { en: 'Our Vision', ar: 'رؤيتنا' },
-    kicker: { en: 'Where we are going', ar: 'إلى أين نتجه' },
-    photoCaption: { en: 'BMIC by night · Assiut', ar: 'BMIC ليلًا · أسيوط' },
-    body: {
-      en: 'To be a global force in industrial investment, building businesses that shape markets, connect industries, and create lasting value.',
-      ar: 'أن نكون قوة عالمية في الاستثمار الصناعي، نبني أعمالًا تُشكّل الأسواق، وتربط الصناعات، وتصنع قيمة تدوم.',
-    },
+  /** Vision & Mission — today's mission, tomorrow's vision. Statements are the official ones, split into headline + supporting line */
+  purpose: {
+    eyebrow: { en: 'Our Purpose', ar: 'غايتنا' },
+    /** a newline marks the display line break; the second line carries the copper accent */
+    title: { en: 'What We Do &\nWhere We’re Going', ar: 'ما نفعله\nوإلى أين نتجه' },
+    lead: { en: 'A clear mission for today and a bold vision for tomorrow.', ar: 'رسالة واضحة لليوم، ورؤية طموحة للغد.' },
   },
   mission: {
     eyebrow: { en: 'Our Mission', ar: 'رسالتنا' },
-    kicker: { en: 'What we do to get there', ar: 'ما نفعله لنصل' },
+    headline: { en: 'We build and operate world-class industrial businesses.', ar: 'نبني ونُدير أعمالًا صناعية بمستوى عالمي.' },
     body: {
-      en: 'We build and operate world-class industrial businesses, combining investment, expertise and integrated supply chains to create sustainable long-term value.',
-      ar: 'نبني ونُدير أعمالًا صناعية بمستوى عالمي، نجمع فيها بين الاستثمار والخبرة وسلاسل الإمداد المتكاملة لنصنع قيمة مستدامة على المدى الطويل.',
+      en: 'Combining investment, expertise and integrated supply chains to create sustainable long-term value.',
+      ar: 'نجمع فيها بين الاستثمار والخبرة وسلاسل الإمداد المتكاملة، لنصنع قيمة مستدامة على المدى الطويل.',
+    },
+  },
+  vision: {
+    eyebrow: { en: 'Our Vision', ar: 'رؤيتنا' },
+    headline: { en: 'To be a global force in industrial investment.', ar: 'أن نكون قوة عالمية في الاستثمار الصناعي.' },
+    body: {
+      en: 'Building businesses that shape markets, connect industries, and create lasting value.',
+      ar: 'نبني أعمالًا تُشكّل الأسواق، وتربط الصناعات، وتصنع قيمة تدوم.',
     },
   },
   values: {
     eyebrow: { en: 'Our Core Values', ar: 'قيمنا الأساسية' },
-    title: { en: 'Six principles behind every investment.', ar: 'ستة مبادئ وراء كل استثمار.' },
-    photoCaption: { en: 'The Cleopatra Cement team · Samalout', ar: 'فريق أسمنت كليوباترا · سمالوط' },
+    title: { en: 'Six principles behind\nevery investment.', ar: 'ستة مبادئ وراء\nكل استثمار.' },
+    lead: {
+      en: 'The values that guide our decisions and shape how we build, operate, and grow our businesses.',
+      ar: 'القيم التي توجّه قراراتنا، وتشكّل طريقتنا في بناء أعمالنا وتشغيلها وتنميتها.',
+    },
     items: [
       {
         id: 'integrity',
@@ -882,12 +907,15 @@ export const COPY = {
   },
   businesses: {
     eyebrow: { en: 'Our Businesses', ar: 'شركاتنا' },
-    title: { en: 'Nine companies. One integrated platform.', ar: 'تسع شركات. منصة واحدة متكاملة.' },
+    title: { en: 'Independent strengths.\nOne integrated group.', ar: 'قوة كل شركة.\nمجموعة واحدة متكاملة.' },
     body: {
-      en: 'From grey and white cement to non-ferrous metals and the terminals that carry them to the world — each business is a link in the same industrial chain.',
-      ar: 'من الأسمنت الرمادي والأبيض إلى المعادن غير الحديدية والمحطات التي تحملها إلى العالم — كل شركة حلقة في السلسلة الصناعية ذاتها.',
+      en: 'From grey and white cement to non-ferrous metals and cement terminals, our businesses work together across the industrial value chain.',
+      ar: 'من الأسمنت الرمادي والأبيض إلى المعادن غير الحديدية ومحطات الأسمنت، تعمل شركاتنا معًا على امتداد سلسلة القيمة الصناعية.',
     },
+    all: { en: 'All', ar: 'الكل' },
+    filterLabel: { en: 'Filter by sector', ar: 'تصفية حسب القطاع' },
     onMap: { en: 'View on the map', ar: 'اعرضها على الخريطة' },
+    explore: { en: 'Explore our Global Footprint', ar: 'استكشف حضورنا العالمي' },
   },
   footprint: {
     eyebrow: { en: 'Global Footprint', ar: 'حضورنا العالمي' },
@@ -933,11 +961,11 @@ export const COPY = {
     mapLabel: { en: 'Interactive globe of ITI Group operations', ar: 'كرة أرضية تفاعلية لعمليات مجموعة ITI' },
   },
   contact: {
-    eyebrow: { en: 'Contact', ar: 'تواصل معنا' },
-    title: { en: 'Let’s build what moves the world.', ar: 'لنَبنِ معًا ما يُحرّك العالم.' },
+    eyebrow: { en: 'Contact us', ar: 'تواصل معنا' },
+    title: { en: 'Let’s start a\nconversation.', ar: 'لنبدأ\nحوارًا.' },
     body: {
-      en: 'For partnerships, investment and general enquiries, our team in Barcelona will connect you with the right business.',
-      ar: 'للشراكات والاستثمار والاستفسارات العامة، يصلك فريقنا في برشلونة بالجهة المناسبة داخل المجموعة.',
+      en: 'Whether you’re exploring a partnership, a commercial opportunity, or have a general inquiry, our team is here to help.',
+      ar: 'سواء كنت تستكشف شراكة أو فرصة تجارية أو لديك استفسار عام، فريقنا هنا لمساعدتك.',
     },
     email: { en: 'Email', ar: 'البريد الإلكتروني' },
     website: { en: 'Website', ar: 'الموقع الإلكتروني' },
@@ -962,4 +990,147 @@ export const CONTACT = {
   email: 'inquiries@iti-spain.com',
   website: 'www.iti-spain.com',
   websiteUrl: 'https://www.iti-spain.com',
+}
+
+/* ------------------------------------------------------------------ */
+/* Contact form — inquiry routes drawn from what the Group actually    */
+/* does: cement & SCM, SHG zinc, cables, port terminals, investment    */
+/* ------------------------------------------------------------------ */
+
+export type InquiryId = 'partnership' | 'procurement' | 'distribution' | 'general'
+
+export interface InquiryField {
+  id: string
+  label: L
+  options: L[]
+  optional?: boolean
+}
+
+/** Four routes into the Group. Each adds at most two short questions, only where they help the team route the message */
+export const INQUIRIES: { id: InquiryId; title: L; fields: InquiryField[]; placeholder: L }[] = [
+  {
+    id: 'partnership',
+    title: { en: 'Investment & Partnerships', ar: 'الاستثمار والشراكات' },
+    fields: [
+      {
+        id: 'organisation',
+        label: { en: 'Organisation type', ar: 'نوع الجهة' },
+        optional: true,
+        options: [
+          { en: 'Industrial company', ar: 'شركة صناعية' },
+          { en: 'Investor or fund', ar: 'مستثمر أو صندوق' },
+          { en: 'Financial institution', ar: 'مؤسسة مالية' },
+          { en: 'Government or public entity', ar: 'جهة حكومية أو عامة' },
+          { en: 'Other', ar: 'أخرى' },
+        ],
+      },
+      {
+        id: 'sector',
+        label: { en: 'Sector of interest', ar: 'القطاع محل الاهتمام' },
+        optional: true,
+        options: [
+          { en: 'Cement and building materials', ar: 'الأسمنت ومواد البناء' },
+          { en: 'Terminals and logistics', ar: 'المحطات والخدمات اللوجستية' },
+          { en: 'Non-ferrous metals', ar: 'المعادن غير الحديدية' },
+          { en: 'Infrastructure', ar: 'البنية التحتية' },
+          { en: 'Other', ar: 'أخرى' },
+        ],
+      },
+    ],
+    placeholder: { en: 'The opportunity, its scale and the role you see for ITI Group…', ar: 'الفرصة وحجمها والدور الذي تراه لمجموعة ITI…' },
+  },
+  {
+    id: 'procurement',
+    title: { en: 'Procurement & Suppliers', ar: 'المشتريات والموردون' },
+    fields: [
+      {
+        id: 'supplies',
+        label: { en: 'You supply', ar: 'ما تورّده' },
+        optional: true,
+        options: [
+          { en: 'Equipment and spare parts', ar: 'معدات وقطع غيار' },
+          { en: 'Raw materials and fuels', ar: 'مواد خام ووقود' },
+          { en: 'Engineering and technical services', ar: 'خدمات هندسية وفنية' },
+          { en: 'Shipping and freight', ar: 'الشحن والنقل' },
+          { en: 'Other', ar: 'أخرى' },
+        ],
+      },
+    ],
+    placeholder: { en: 'What you offer, your references, and the operations it applies to…', ar: 'ما تقدّمه، ومراجعك، والعمليات المعنية…' },
+  },
+  {
+    id: 'distribution',
+    title: { en: 'Distribution & Logistics', ar: 'التوزيع والخدمات اللوجستية' },
+    fields: [
+      {
+        id: 'product',
+        label: { en: 'Product', ar: 'المنتج' },
+        optional: true,
+        options: [
+          { en: 'Grey cement', ar: 'أسمنت رمادي' },
+          { en: 'White cement', ar: 'أسمنت أبيض' },
+          { en: 'Supplementary cementitious materials', ar: 'مواد أسمنتية تكميلية' },
+          { en: 'Special High Grade zinc', ar: 'زنك عالي الجودة (SHG)' },
+          { en: 'Cables', ar: 'كابلات' },
+          { en: 'Terminal services', ar: 'خدمات المحطات' },
+        ],
+      },
+      {
+        id: 'terminal',
+        label: { en: 'Terminal or region', ar: 'المحطة أو المنطقة' },
+        optional: true,
+        options: [
+          { en: 'Alexandria, Egypt', ar: 'الإسكندرية، مصر' },
+          { en: 'Houston, Texas', ar: 'هيوستن، تكساس' },
+          { en: 'Tampa, Florida', ar: 'تامبا، فلوريدا' },
+          { en: 'Gdańsk, Poland', ar: 'غدانسك، بولندا' },
+          { en: 'Ravenna, Italy', ar: 'رافينا، إيطاليا' },
+          { en: 'Benelux', ar: 'البنلوكس' },
+          { en: 'Other or not sure', ar: 'أخرى أو لم أحدد' },
+        ],
+      },
+    ],
+    placeholder: { en: 'Volumes, delivery terms and timing, bulk or bagged…', ar: 'الكميات، شروط التسليم والتوقيت، سائب أو معبأ…' },
+  },
+  {
+    id: 'general',
+    title: { en: 'General Inquiry', ar: 'استفسار عام' },
+    fields: [],
+    placeholder: { en: 'Tell us about your inquiry, opportunity, or request…', ar: 'أخبرنا عن استفسارك أو الفرصة أو طلبك…' },
+  },
+]
+
+export const CONTACT_FORM = {
+  type: { en: 'Inquiry type', ar: 'نوع الاستفسار' },
+  name: { en: 'Full name', ar: 'الاسم الكامل' },
+  namePh: { en: 'Your full name', ar: 'اسمك الكامل' },
+  email: { en: 'Business email', ar: 'البريد الإلكتروني للعمل' },
+  emailPh: { en: 'name@company.com', ar: 'name@company.com' },
+  company: { en: 'Company / Organization', ar: 'الشركة / الجهة' },
+  companyPh: { en: 'Organization name', ar: 'اسم الجهة' },
+  country: { en: 'Country', ar: 'الدولة' },
+  countryPh: { en: 'Select country', ar: 'اختر الدولة' },
+  message: { en: 'Your message', ar: 'رسالتك' },
+  choose: { en: 'Select', ar: 'اختر' },
+  required: { en: 'required', ar: 'مطلوب' },
+  submit: { en: 'Send inquiry', ar: 'أرسل الاستفسار' },
+  submitNote: {
+    en: 'Opens your email app with the inquiry addressed to our team. Nothing is sent until you press send.',
+    ar: 'يفتح تطبيق البريد لديك والرسالة موجّهة إلى فريقنا، ولا يُرسل شيء حتى تضغط إرسال.',
+  },
+  errors: {
+    topic: { en: 'Select an inquiry type.', ar: 'اختر نوع الاستفسار.' },
+    required: { en: 'This field is required.', ar: 'هذا الحقل مطلوب.' },
+    email: { en: 'Enter a valid email address, e.g. name@company.com.', ar: 'أدخل بريدًا إلكترونيًا صحيحًا، مثل name@company.com.' },
+    message: { en: 'Please add a few more details (at least 20 characters).', ar: 'أضف مزيدًا من التفاصيل (20 حرفًا على الأقل).' },
+    summary: { en: 'Please review the highlighted fields.', ar: 'يُرجى مراجعة الحقول المحددة.' },
+  },
+  doneTitle: { en: 'Your inquiry is ready in your email app.', ar: 'رسالتك جاهزة في تطبيق البريد.' },
+  doneBody: {
+    en: 'Review it and press send to reach our team. If no email app opened, copy the inquiry and send it to',
+    ar: 'راجعها واضغط إرسال لتصل إلى فريقنا. إن لم يُفتح تطبيق البريد، انسخ الرسالة وأرسلها إلى',
+  },
+  copyInquiry: { en: 'Copy inquiry', ar: 'انسخ الرسالة' },
+  copiedInquiry: { en: 'Copied', ar: 'تم النسخ' },
+  edit: { en: 'Edit inquiry', ar: 'عدّل الرسالة' },
 }

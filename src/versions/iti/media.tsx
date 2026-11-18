@@ -31,9 +31,10 @@ interface PictureProps {
   style?: CSSProperties
   /** Above-the-fold: load eagerly with high priority */
   priority?: boolean
+  onLoad?: () => void
 }
 
-export function Picture({ k, sizes, alt = '', className, style, priority = false }: PictureProps) {
+export function Picture({ k, sizes, alt = '', className, style, priority = false, onLoad }: PictureProps) {
   return (
     <picture className="contents">
       <source type="image/avif" srcSet={srcSet(k, 'avif')} sizes={sizes} />
@@ -47,6 +48,7 @@ export function Picture({ k, sizes, alt = '', className, style, priority = false
         decoding={priority ? 'sync' : 'async'}
         fetchPriority={priority ? 'high' : 'auto'}
         draggable={false}
+        onLoad={onLoad}
       />
     </picture>
   )

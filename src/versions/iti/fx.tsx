@@ -85,7 +85,9 @@ export function SplitReveal({ text, as = 'h2', className, emphasis = 0, delay = 
   const reduce = useReducedMotion()
   const ref = useRef<HTMLElement | null>(null)
   const shown = useRevealed(ref, immediate || !!reduce)
-  const words = text.split(' ')
+  // a newline in the copy is a designed line break: each line becomes its own block
+  const lines = text.split('\n').map((l) => l.trim().split(' '))
+  const words = lines.flat()
   const Comp = as === 'h1' ? motion.h1 : as === 'p' ? motion.p : motion.h2
   return (
     <Comp
@@ -96,19 +98,32 @@ export function SplitReveal({ text, as = 'h2', className, emphasis = 0, delay = 
       initial={reduce ? false : 'hidden'}
       animate={shown ? 'show' : 'hidden'}
     >
-      {words.map((w, i) => (
-        <span key={`${w}-${i}`}>
-          <span className="inline-block overflow-hidden pb-[0.12em] -mb-[0.12em] align-bottom">
-            <motion.span
-              className={`inline-block ${i >= words.length - emphasis ? 'iti-grad-text' : ''}`}
-              variants={reduce ? undefined : lineWord}
-            >
-              {w}
-            </motion.span>
+      {lines.map((line, li) => {
+        const offset = lines.slice(0, li).reduce((n, l) => n + l.length, 0)
+        const body = line.map((w, j) => {
+          const i = offset + j
+          return (
+            <span key={`${w}-${i}`}>
+              <span className="inline-block overflow-hidden pb-[0.12em] -mb-[0.12em] align-bottom">
+                <motion.span
+                  className={`inline-block ${i >= words.length - emphasis ? 'iti-grad-text' : ''}`}
+                  variants={reduce ? undefined : lineWord}
+                >
+                  {w}
+                </motion.span>
+              </span>
+              {j < line.length - 1 ? ' ' : ''}
+            </span>
+          )
+        })
+        return lines.length > 1 ? (
+          <span key={li} className="block">
+            {body}
           </span>
-          {i < words.length - 1 ? ' ' : ''}
-        </span>
-      ))}
+        ) : (
+          body
+        )
+      })}
     </Comp>
   )
 }

@@ -166,3 +166,8 @@ export function IconOutline({ className, stroke = 'currentColor', strokeWidth = 
     </svg>
   )
 }
+
+/** The icon's three shapes (roof, right pillar, left pillar) in the official vector's coordinates */
+export const ICON_SHAPES = [ICON_ROOF, ICON_PILLAR_R, ICON_PILLAR_L] as const
+/** viewBox that frames the whole icon with a little air, so strokes are never clipped */
+export const ICON_FRAME = '120 -12 682 836'

@@ -700,14 +700,6 @@ button {
   from { transform: scale(1.04); }
   to { transform: scale(1.14) translate3d(-1.5%, -1%, 0); }
 }
-.iti-business-card {
-  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s, border-color 0.35s;
-}
-.iti-business-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 22px 40px -26px rgb(5 53 82 / 0.45);
-  border-color: rgb(5 53 82 / 0.32);
-}
 .iti-value-row {
   transition: background 0.3s;
 }
@@ -781,11 +773,189 @@ button {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
-/* outlined numeral behind the About composition */
-.iti-outline-num {
-  color: transparent;
-  -webkit-text-stroke: 1.5px rgb(5 53 82 / 0.14);
-  letter-spacing: -0.04em;
+/* About — the display headline gets room to breathe */
+.iti-about-title {
+  font-size: clamp(2rem, 3.5vw, 3.1rem);
+  line-height: 1.14;
+  letter-spacing: -0.015em;
+}
+.iti-root[dir='rtl'] .iti-about-title {
+  line-height: 1.4;
+  letter-spacing: 0;
+}
+
+/* About — the mark in copper outline: draw, one champagne sweep along the stroke, a glow settles behind the roof */
+.iti-mark polygon {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+.iti-mark.is-drawn .iti-mark-base polygon {
+  animation: iti-draw 2.4s cubic-bezier(0.65, 0, 0.35, 1) 0.1s forwards;
+}
+.iti-mark.is-drawn .iti-mark-base polygon:nth-child(2) { animation-delay: 0.5s; }
+.iti-mark.is-drawn .iti-mark-base polygon:nth-child(3) { animation-delay: 0.7s; }
+@keyframes iti-draw {
+  to { stroke-dashoffset: 0; }
+}
+/* a single short dash (gap longer than the path) travels the whole outline once */
+.iti-mark-sweep polygon {
+  stroke-dasharray: 0.1 1.2;
+  stroke-dashoffset: 0.1;
+  opacity: 0;
+}
+.iti-mark.is-drawn .iti-mark-sweep polygon {
+  animation: iti-sweep 2.2s cubic-bezier(0.45, 0, 0.25, 1) 3s forwards;
+}
+.iti-mark.is-drawn .iti-mark-sweep polygon:nth-child(2) { animation-delay: 3.25s; }
+.iti-mark.is-drawn .iti-mark-sweep polygon:nth-child(3) { animation-delay: 3.4s; }
+@keyframes iti-sweep {
+  0% { stroke-dashoffset: 0.1; opacity: 0; }
+  12% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { stroke-dashoffset: -1; opacity: 0; }
+}
+.iti-mark-glow {
+  opacity: 0;
+  transition: opacity 1.8s ease 1.6s;
+}
+.iti-mark.is-drawn .iti-mark-glow {
+  opacity: 1;
+}
+
+/* About pillars — the copper rule warms up under the pillar in focus */
+.iti-pillar-rule {
+  transition: background-color 0.4s, box-shadow 0.4s;
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .iti-pillar:hover .iti-pillar-rule {
+    background-color: var(--iti-copper-soft);
+    box-shadow: 0 0 12px rgb(212 137 95 / 0.45);
+  }
+}
+
+/* Vision & Mission — deep navy, lifting towards the lit ribbons */
+.iti-purpose {
+  background:
+    radial-gradient(70% 80% at 85% 20%, rgb(33 92 126 / 0.55), transparent 70%),
+    linear-gradient(180deg, #06304b 0%, #042337 55%, #021a2b 100%);
+}
+.iti-root[dir='rtl'] .iti-purpose {
+  background:
+    radial-gradient(70% 80% at 15% 20%, rgb(33 92 126 / 0.55), transparent 70%),
+    linear-gradient(180deg, #06304b 0%, #042337 55%, #021a2b 100%);
+}
+.iti-purpose-title {
+  font-family: var(--iti-head);
+  font-weight: 800;
+  font-size: clamp(2.3rem, 4.6vw, 4.1rem);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  color: #fff;
+}
+.iti-root[dir='rtl'] .iti-purpose-title {
+  font-weight: 700;
+  line-height: 1.32;
+  letter-spacing: 0;
+}
+/* ribbons: the faces settle in, then copper light runs up each edge */
+.iti-ribbon-face {
+  opacity: 0;
+  transition: opacity 1.4s ease;
+}
+.iti-ribbons.is-lit .iti-ribbon-face {
+  opacity: 1;
+}
+.iti-ribbon-edge {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+.iti-ribbons.is-lit .iti-ribbon-edge {
+  animation: iti-draw 2.2s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+
+/* Values — Mist Gray (ITI guideline), six frosted discs on one copper line */
+.iti-values {
+  background:
+    radial-gradient(55% 60% at 88% 8%, rgb(255 255 255 / 0.55), transparent 70%),
+    radial-gradient(45% 50% at 6% 96%, rgb(255 255 255 / 0.45), transparent 70%),
+    var(--iti-mist);
+}
+.iti-values-title {
+  font-size: clamp(2.1rem, 4vw, 3.5rem);
+  line-height: 1.1;
+}
+.iti-root[dir='rtl'] .iti-values-title {
+  line-height: 1.35;
+}
+.iti-vnode {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 96px;
+  height: 96px;
+  border-radius: 999px;
+  color: var(--iti-navy);
+  background: radial-gradient(circle at 34% 28%, #ffffff 0%, #f6f8f8 52%, #e9eeef 100%);
+  box-shadow:
+    0 16px 34px -18px rgb(5 53 82 / 0.42),
+    inset 0 1px 0 rgb(255 255 255 / 0.95),
+    0 0 0 1px rgb(5 53 82 / 0.06);
+  transition:
+    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.55s,
+    color 0.35s;
+  cursor: pointer;
+}
+.iti-vnode-sm {
+  width: 64px;
+  height: 64px;
+}
+/* reached by the light: a warm copper bloom under the disc */
+.iti-vnode.is-reached {
+  box-shadow:
+    0 16px 34px -18px rgb(5 53 82 / 0.42),
+    0 10px 26px -10px rgb(227 154 107 / 0.55),
+    inset 0 1px 0 rgb(255 255 255 / 0.95),
+    0 0 0 1px rgb(169 97 58 / 0.14);
+}
+.iti-vnode.is-active {
+  color: var(--iti-copper);
+  transform: translateY(-6px) scale(1.07);
+  box-shadow:
+    0 22px 40px -16px rgb(169 97 58 / 0.55),
+    0 0 0 1.5px rgb(212 137 95 / 0.85),
+    0 0 0 8px rgb(212 137 95 / 0.1),
+    inset 0 1px 0 #fff;
+}
+.iti-vnode svg {
+  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.iti-vnode.is-active svg {
+  transform: scale(1.08) rotate(-4deg);
+}
+.iti-vnode:focus-visible {
+  outline: 2px solid var(--iti-copper);
+  outline-offset: 4px;
+}
+/* the faint route draws itself, then the spark lights it */
+.iti-vp-base {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+.iti-vp-base.is-drawn {
+  animation: iti-draw 1.6s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+.iti-vp-spark {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  border-radius: 999px;
+  background: #fff4e8;
+  box-shadow:
+    0 0 6px 2px rgb(240 201 162 / 0.95),
+    0 0 18px 6px rgb(227 154 107 / 0.55);
+  pointer-events: none;
 }
 
 /* cursor spotlight — set --mx/--my with fx.spotlight() */
@@ -820,82 +990,398 @@ button {
   color: #fff;
   transform: rotate(-8deg) scale(1.06);
 }
-.iti-highlight:hover > span {
-  transform: rotate(225deg);
-}
 
-/* businesses — mist with a steel bloom, dissolving into the night of the globe */
+/* businesses — Mist Gray (ITI guideline); logos on a hairline grid */
 .iti-businesses {
-  background:
-    radial-gradient(50% 40% at 85% 10%, rgb(33 92 126 / 0.1), transparent 70%),
-    linear-gradient(180deg, #f3f6f7 0%, #f3f6f7 72%, #cfdbe2 84%, #2a5a78 94%, #03263c 100%);
+  background: var(--iti-mist);
+  border-top: 1px solid rgb(5 53 82 / 0.08);
 }
-.iti-business-card {
-  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.45s, border-color 0.45s;
+.iti-biz-title {
+  font-size: clamp(2.1rem, 3.8vw, 3.3rem);
+  line-height: 1.1;
 }
-.iti-business-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 26px 50px -28px rgb(5 53 82 / 0.5);
-  border-color: rgb(169 97 58 / 0.4);
+.iti-root[dir='rtl'] .iti-biz-title {
+  line-height: 1.35;
 }
-.iti-map-dot::after {
+/* sector tabs: text, with a copper rule under the one in use */
+.iti-sector-tab {
+  position: relative;
+  padding: 0.4rem 0;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--iti-ink-soft);
+  transition: color 0.25s;
+}
+.iti-sector-tab::after {
   content: '';
   position: absolute;
-  inset: -4px;
-  border-radius: 999px;
-  border: 1px solid var(--iti-copper);
-  opacity: 0;
-  transform: scale(0.4);
+  inset-inline: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--iti-copper);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
-.iti-business-card:hover .iti-map-dot::after {
-  animation: iti-dot-ring 1.2s cubic-bezier(0, 0, 0.2, 1) infinite;
+.iti-root[dir='rtl'] .iti-sector-tab::after {
+  transform-origin: right;
 }
-@keyframes iti-dot-ring {
-  0% { opacity: 0.8; transform: scale(0.4); }
-  100% { opacity: 0; transform: scale(1.8); }
+.iti-sector-tab:hover,
+.iti-sector-tab.is-hinted {
+  color: var(--iti-navy);
 }
-
-/* the finale */
-.iti-finale {
-  background:
-    radial-gradient(60% 45% at 50% 100%, rgb(33 92 126 / 0.55), transparent 70%),
-    radial-gradient(40% 30% at 50% 0%, rgb(169 97 58 / 0.12), transparent 70%),
-    linear-gradient(180deg, #021a2b 0%, #01131f 55%, #03263c 100%);
+.iti-sector-tab.is-on {
+  color: var(--iti-navy);
 }
-.iti-glass-tile {
+.iti-sector-tab.is-on::after {
+  transform: scaleX(1);
+}
+.iti-sector-tab:focus-visible {
+  outline: 2px solid var(--iti-copper);
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+/* the grid: hairlines between cells, open at the outer edges */
+.iti-biz-grid {
+  gap: 1px;
+  background: rgb(5 53 82 / 0.12);
+  border-block: 1px solid rgb(5 53 82 / 0.12);
+}
+.iti-biz-grid > li {
+  background: var(--iti-mist);
+}
+.iti-biz-cell {
   position: relative;
-  background: linear-gradient(160deg, rgb(255 255 255 / 0.07), rgb(255 255 255 / 0.02));
-  border: 1px solid rgb(255 255 255 / 0.1);
-  backdrop-filter: blur(10px);
-  transition: border-color 0.4s, transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  display: block;
+  width: 100%;
+  height: 132px;
+  cursor: pointer;
 }
-.iti-glass-tile:hover {
-  border-color: rgb(227 154 107 / 0.35);
-  transform: translateY(-3px);
+@media (min-width: 640px) {
+  .iti-biz-cell { height: 168px; }
 }
-.iti-live-dot {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  border-radius: 999px;
-  background: #7fd1a6;
-  animation: iti-live 2.2s infinite;
+@media (min-width: 1024px) {
+  .iti-biz-cell { height: 188px; }
 }
-@keyframes iti-live {
-  0% { box-shadow: 0 0 0 0 rgb(127 209 166 / 0.55); }
-  100% { box-shadow: 0 0 0 7px rgb(127 209 166 / 0); }
+/* on focus a plate rises inside the cell */
+.iti-biz-plate {
+  position: absolute;
+  inset: 10px;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 18px 36px -26px rgb(5 53 82 / 0.45);
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity 0.35s ease,
+    transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.iti-biz-cell:hover .iti-biz-plate,
+.iti-biz-cell:focus-visible .iti-biz-plate {
+  opacity: 1;
+  transform: none;
+}
+.iti-biz-logo {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition:
+    transform 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.35s,
+    filter 0.35s;
+}
+.iti-biz-logo > span:first-child {
+  max-width: 100%;
+}
+.iti-biz-cell:hover .iti-biz-logo,
+.iti-biz-cell:focus-visible .iti-biz-logo {
+  transform: translateY(2px) scale(1.03);
+}
+.iti-biz-tag {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  color: var(--iti-ink-soft);
+}
+.iti-biz-meta {
+  position: absolute;
+  inset-inline: 26px;
+  top: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--iti-ink-soft);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.iti-biz-cell:hover .iti-biz-meta,
+.iti-biz-cell:focus-visible .iti-biz-meta {
+  opacity: 1;
+}
+.iti-biz-rule {
+  position: absolute;
+  left: 50%;
+  bottom: 10px;
+  width: 44%;
+  height: 2px;
+  background: var(--iti-copper);
+  transform: translateX(-50%) scaleX(0);
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.iti-biz-cell:hover .iti-biz-rule,
+.iti-biz-cell:focus-visible .iti-biz-rule {
+  transform: translateX(-50%) scaleX(1);
+}
+.iti-biz-cell:focus-visible {
+  outline: 2px solid var(--iti-copper);
+  outline-offset: -2px;
+}
+/* a sector chosen: the others step back */
+.iti-biz-cell.is-off .iti-biz-logo {
+  opacity: 0.22;
+  filter: grayscale(1);
+}
+/* touch screens: no hover, so the pin says the cell opens the map */
+@media (hover: none) {
+  .iti-biz-meta {
+    opacity: 1;
+    justify-content: flex-end;
+  }
+  .iti-biz-meta > span:first-child {
+    display: none;
+  }
+}
+/* the hand-off link */
+.iti-explore {
+  display: inline-flex;
+  align-items: center;
+  gap: 1rem;
+  font-family: var(--iti-head);
+  font-weight: 700;
+  font-size: 1.02rem;
+  color: var(--iti-navy);
+}
+.iti-explore .iti-arrow {
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.iti-explore:hover .iti-arrow {
+  transform: translateX(4px);
+}
+.iti-root[dir='rtl'] .iti-explore:hover .iti-arrow {
+  transform: translateX(-4px) scaleX(-1);
 }
 
-/* hero brand outline draws itself in */
-.iti-draw polygon {
-  stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-  animation: iti-draw 3.2s cubic-bezier(0.65, 0, 0.35, 1) 0.4s forwards;
+/* contact */
+.iti-contact-title {
+  font-size: clamp(2.1rem, 3.6vw, 3.2rem);
+  line-height: 1.1;
 }
-.iti-draw polygon:nth-child(2) { animation-delay: 0.9s; }
-.iti-draw polygon:nth-child(3) { animation-delay: 1.2s; }
-@keyframes iti-draw {
-  to { stroke-dashoffset: 0; }
+.iti-root[dir='rtl'] .iti-contact-title {
+  line-height: 1.35;
+}
+.iti-contact {
+  background:
+    radial-gradient(50% 55% at 90% 10%, rgb(255 255 255 / 0.5), transparent 70%),
+    var(--iti-mist);
+}
+.iti-form-card {
+  border-radius: 24px;
+  background: #fff;
+  padding: clamp(1.5rem, 3.4vw, 2.75rem);
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.9) inset,
+    0 30px 70px -40px rgb(5 53 82 / 0.32),
+    0 0 0 1px rgb(5 53 82 / 0.05);
+}
+/* inquiry type tiles */
+.iti-type {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 124px;
+  padding: 1.4rem 0.9rem 1.1rem;
+  border: 1px solid rgb(5 53 82 / 0.16);
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+  transition:
+    border-color 0.25s,
+    background-color 0.25s,
+    box-shadow 0.25s,
+    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.iti-type:hover {
+  border-color: rgb(5 53 82 / 0.35);
+  transform: translateY(-2px);
+}
+.iti-type.is-on {
+  border-color: var(--iti-navy);
+  background: rgb(226 231 232 / 0.35);
+  box-shadow: inset 0 0 0 1px var(--iti-navy);
+}
+.iti-type.is-invalid {
+  border-color: rgb(163 65 43 / 0.5);
+}
+.iti-type:has(input:focus-visible) {
+  outline: 2px solid var(--iti-copper);
+  outline-offset: 3px;
+}
+.iti-type-icon {
+  color: var(--iti-navy);
+  transition: color 0.25s, transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.iti-type:hover .iti-type-icon,
+.iti-type.is-on .iti-type-icon {
+  color: var(--iti-copper);
+}
+.iti-type.is-on .iti-type-icon {
+  transform: translateY(-1px) scale(1.05);
+}
+.iti-type-dot {
+  position: absolute;
+  top: 12px;
+  inset-inline-start: 12px;
+  width: 17px;
+  height: 17px;
+  border-radius: 999px;
+  border: 1.5px solid rgb(5 53 82 / 0.3);
+  transition: border-color 0.25s, box-shadow 0.25s;
+}
+.iti-type.is-on .iti-type-dot {
+  border-color: var(--iti-navy);
+  box-shadow: inset 0 0 0 3.5px #fff, inset 0 0 0 9px var(--iti-copper);
+}
+.iti-select.is-empty {
+  color: rgb(74 100 116 / 0.75);
+}
+
+.iti-input {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 0.95rem;
+  border: 1px solid rgb(5 53 82 / 0.2);
+  border-radius: 6px;
+  background: #fff;
+  font-size: 0.95rem;
+  color: var(--iti-navy);
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+.iti-input::placeholder {
+  color: rgb(74 100 116 / 0.65);
+}
+.iti-input:hover {
+  border-color: rgb(5 53 82 / 0.38);
+}
+.iti-input:focus {
+  outline: none;
+  border-color: var(--iti-navy);
+  box-shadow: 0 0 0 3px rgb(33 92 126 / 0.14);
+}
+.iti-input.is-invalid {
+  border-color: #a3412b;
+}
+.iti-input.is-invalid:focus {
+  box-shadow: 0 0 0 3px rgb(163 65 43 / 0.14);
+}
+.iti-select {
+  appearance: none;
+  padding-inline-end: 2.4rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4' fill='none' stroke='%23053552' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-size: 14px;
+  background-position: right 0.9rem center;
+}
+.iti-root[dir='rtl'] .iti-select {
+  background-position: left 0.9rem center;
+}
+.iti-btn-navy {
+  background: var(--iti-navy);
+  color: #fff;
+}
+.iti-btn-navy:hover {
+  background: #0a4466;
+}
+.iti-btn-outline {
+  border: 1px solid rgb(5 53 82 / 0.3);
+  color: var(--iti-navy);
+}
+.iti-btn-outline:hover {
+  border-color: var(--iti-navy);
+}
+.iti-text-btn {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--iti-copper);
+  text-decoration: underline;
+  text-decoration-color: rgb(169 97 58 / 0.35);
+  text-underline-offset: 4px;
+  transition: text-decoration-color 0.2s;
+}
+.iti-text-btn:hover {
+  text-decoration-color: var(--iti-copper);
+}
+
+
+/* nav — frosted glass once the page scrolls: translucent, blurred, with a fine light edge */
+.iti-nav-glass {
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.6), rgb(255 255 255 / 0.38));
+  -webkit-backdrop-filter: blur(22px) saturate(1.7);
+  backdrop-filter: blur(22px) saturate(1.7);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.85),
+    inset 0 -1px 0 rgb(255 255 255 / 0.55),
+    0 1px 0 rgb(5 53 82 / 0.07),
+    0 10px 30px -18px rgb(5 53 82 / 0.28);
+}
+.iti-nav-glass-night {
+  background: linear-gradient(180deg, rgb(3 30 48 / 0.62), rgb(2 26 43 / 0.42));
+  -webkit-backdrop-filter: blur(22px) saturate(1.5);
+  backdrop-filter: blur(22px) saturate(1.5);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.1),
+    inset 0 -1px 0 rgb(255 255 255 / 0.08),
+    0 10px 30px -18px rgb(0 0 0 / 0.5);
+}
+/* the open mobile menu needs a calmer, nearly solid surface to read on */
+.iti-nav-open {
+  background: rgb(255 255 255 / 0.96);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+/* hero slider: the incoming site fades in over the outgoing one (no dip to dark), with a slow push-in */
+.iti-hero-slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0s linear 1.4s;
+}
+.iti-hero-slide.is-on {
+  z-index: 1;
+  opacity: 1;
+  transition: opacity 1.4s cubic-bezier(0.45, 0, 0.25, 1);
+}
+.iti-hero-slide img {
+  transform: scale(1.07);
+  /* reset only once the slide is fully covered */
+  transition: transform 0s linear 1.5s;
+}
+.iti-hero-slide.is-on img {
+  transform: scale(1);
+  transition: transform 8s cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
 /* underline that grows from the reading edge */
@@ -918,13 +1404,59 @@ button {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .iti-draw polygon {
+  .iti-ribbon-face {
+    transition: none;
+  }
+  .iti-biz-plate,
+  .iti-biz-logo,
+  .iti-biz-cell:hover .iti-biz-plate,
+  .iti-biz-cell:hover .iti-biz-logo,
+  .iti-biz-cell:focus-visible .iti-biz-logo,
+  .iti-explore:hover .iti-arrow {
+    transform: none;
+  }
+  .iti-biz-rule {
+    transition: none;
+  }
+  .iti-type:hover,
+  .iti-type.is-on .iti-type-icon {
+    transform: none;
+  }
+  .iti-vp-base,
+  .iti-vp-base.is-drawn {
     animation: none;
     stroke-dashoffset: 0;
   }
-  .iti-live-dot,
-  .iti-business-card:hover .iti-map-dot::after {
+  .iti-vnode,
+  .iti-vnode svg {
+    transition: color 0.2s;
+  }
+  .iti-vnode.is-active,
+  .iti-vnode.is-active svg {
+    transform: none;
+  }
+  .iti-ribbon-edge,
+  .iti-ribbons.is-lit .iti-ribbon-edge {
     animation: none;
+    stroke-dashoffset: 0;
+  }
+  .iti-mark .iti-mark-base polygon {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+  .iti-mark .iti-mark-sweep {
+    display: none;
+  }
+  .iti-mark .iti-mark-glow {
+    transition: none;
+    opacity: 1;
+  }
+  .iti-hero-slide,
+  .iti-hero-slide.is-on,
+  .iti-hero-slide img,
+  .iti-hero-slide.is-on img {
+    transform: none;
+    transition: none;
   }
   .iti-btn::after {
     display: none;
