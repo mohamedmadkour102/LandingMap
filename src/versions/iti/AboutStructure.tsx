@@ -1,10 +1,11 @@
 import { useId, useState, type ReactNode, type RefObject } from 'react'
-import { motion, useScroll, useTransform, type MotionValue, type Variants } from 'framer-motion'
+import { motion, useMotionTemplate, useScroll, useTransform, type MotionValue } from 'framer-motion'
 import { ICON_FRAME, ICON_SHAPES } from './ItiLogo'
 
 /* ------------------------------------------------------------------ */
 /* About — the ITI symbol as an engineered structure: four plates     */
-/* with real thickness, assembled in sequence, locked by copper joints */
+/* with real thickness, already standing; they part and cast shadows  */
+/* as the pointer moves over the section                              */
 /* ------------------------------------------------------------------ */
 
 type Pt = [number, number]
@@ -59,55 +60,21 @@ function sideFaces(poly: Pt[], hidden: number[] = []) {
   return out
 }
 
-type Joint = { from: Pt; to: Pt }
-
 type Part = {
   key: string
   poly: Pt[]
   hiddenEdges?: number[]
   material: 'steel' | 'navy'
-  joints?: Joint[]
-  /** entrance: offset as a share of the structure's height, and when it starts */
-  from: { y: string; scale: number }
-  delay: number
   /** how much the plate leans with the pointer, relative to the others */
   depth: number
 }
 
-/* Assembly order follows construction: columns first, then the core, then the cap lowered onto it */
+/* back to front: the columns, the core, then the cap — the nearer the plate, the further it leans */
 const PARTS: Part[] = [
-  {
-    key: 'pillar-l',
-    poly: PILLAR_L,
-    material: 'navy',
-    joints: [{ from: [263.26, 400.64], to: [131.79, 400.64] }],
-    from: { y: '7%', scale: 0.985 },
-    delay: 0,
-    depth: 0.25,
-  },
-  {
-    key: 'pillar-r',
-    poly: PILLAR_R,
-    material: 'navy',
-    joints: [{ from: [658.66, 400.64], to: [790.14, 400.64] }],
-    from: { y: '7%', scale: 0.985 },
-    delay: 0.14,
-    depth: 0.25,
-  },
-  { key: 'stem', poly: STEM, hiddenEdges: [4], material: 'steel', from: { y: '13%', scale: 1 }, delay: 0.5, depth: 0.55 },
-  {
-    key: 'roof',
-    poly: ROOF_CAP,
-    hiddenEdges: [8],
-    material: 'steel',
-    joints: [
-      { from: [263.26, 326.41], to: [131.79, 326.41] },
-      { from: [658.66, 326.41], to: [790.14, 326.41] },
-    ],
-    from: { y: '-9%', scale: 1.025 },
-    delay: 1.0,
-    depth: 1,
-  },
+  { key: 'pillar-l', poly: PILLAR_L, material: 'navy', depth: 0.25 },
+  { key: 'pillar-r', poly: PILLAR_R, material: 'navy', depth: 0.25 },
+  { key: 'stem', poly: STEM, hiddenEdges: [4], material: 'steel', depth: 0.55 },
+  { key: 'roof', poly: ROOF_CAP, hiddenEdges: [8], material: 'steel', depth: 1 },
 ]
 
 const MATERIAL = {
@@ -127,50 +94,13 @@ const MATERIAL = {
   },
 } as const
 
-const MOVE = [0.76, 0, 0.24, 1] as const
-const JOINTS_AT = 2.15
-
-const plate: Variants = {
-  hidden: (p: Part) => ({ opacity: 0, y: p.from.y, scale: p.from.scale }),
-  show: (p: Part) => ({
-    opacity: 1,
-    y: '0%',
-    scale: 1,
-    transition: {
-      y: { duration: 1.25, ease: MOVE, delay: p.delay },
-      scale: { duration: 1.25, ease: MOVE, delay: p.delay },
-      opacity: { duration: 0.55, ease: 'easeOut', delay: p.delay },
-    },
-  }),
-}
-
-const joint: Variants = {
-  hidden: { pathLength: 0, opacity: 0 },
-  show: (i: number) => ({
-    pathLength: 1,
-    opacity: [0, 1, 0.9],
-    transition: {
-      pathLength: { duration: 0.75, ease: MOVE, delay: JOINTS_AT + i * 0.08 },
-      opacity: { duration: 1.6, times: [0, 0.3, 1], delay: JOINTS_AT + i * 0.08 },
-    },
-  }),
-}
-
-function Plate({ part, uid, assembled, still }: { part: Part; uid: string; assembled: boolean; still: boolean }) {
+function Plate({ part, uid, still }: { part: Part; uid: string; still: boolean }) {
   const m = MATERIAL[part.material]
   const faces = sideFaces(part.poly, part.hiddenEdges)
   const face = toAttr(part.poly)
   const id = `${uid}-${part.key}`
   return (
-    <motion.svg
-      viewBox={ICON_FRAME}
-      className="absolute inset-0 h-full w-full overflow-visible"
-      custom={part}
-      variants={plate}
-      initial={still ? false : 'hidden'}
-      animate={assembled || still ? 'show' : 'hidden'}
-      style={{ transformOrigin: '50% 50%' }}
-    >
+    <svg viewBox={ICON_FRAME} className="absolute inset-0 h-full w-full overflow-visible">
       <defs>
         {/* one light for the whole structure, so plates of the same material read as one surface */}
         <linearGradient id={`${id}-face`} gradientUnits="userSpaceOnUse" x1="300" y1="0" x2="520" y2="811">
@@ -198,7 +128,7 @@ function Plate({ part, uid, assembled, still }: { part: Part; uid: string; assem
       ))}
       {/* front plate */}
       <polygon points={face} fill={`url(#${id}-face)`} />
-      {/* a slow pass of light across the plate, once assembled */}
+      {/* a slow pass of light across the plate, now and then */}
       {!still && (
         <g clipPath={`url(#${id}-clip)`}>
           <g transform="rotate(-24 461 405)">
@@ -206,32 +136,20 @@ function Plate({ part, uid, assembled, still }: { part: Part; uid: string; assem
           </g>
         </g>
       )}
-      {/* copper where this plate meets the next: drawn from the core outwards */}
-      {part.joints?.map((j, i) => (
-        <motion.path
-          key={i}
-          d={`M${j.from[0]} ${j.from[1]}L${j.to[0]} ${j.to[1]}`}
-          stroke="var(--iti-copper)"
-          strokeWidth={2.2}
-          strokeLinecap="butt"
-          vectorEffect="non-scaling-stroke"
-          fill="none"
-          custom={i}
-          variants={joint}
-          initial={still ? false : 'hidden'}
-          animate={assembled || still ? 'show' : 'hidden'}
-          style={still ? { opacity: 0.9 } : undefined}
-        />
-      ))}
-    </motion.svg>
+    </svg>
   )
 }
 
-function Layer({ part, px, py, children }: { part: Part; px: MotionValue<number>; py: MotionValue<number>; children: ReactNode }) {
-  const x = useTransform(px, (v) => v * part.depth * 0.55)
-  const y = useTransform(py, (v) => v * part.depth * 0.55)
+function Layer({ part, px, py, still, children }: { part: Part; px: MotionValue<number>; py: MotionValue<number>; still: boolean; children: ReactNode }) {
+  const x = useTransform(px, (v) => v * part.depth * 0.9)
+  const y = useTransform(py, (v) => v * part.depth * 0.9)
+  // the light sits opposite the pointer: each plate's shadow falls away from it, longer for the nearer plates
+  const sx = useTransform(px, (v) => -v * part.depth * 0.8)
+  const sy = useTransform(py, (v) => 6 + part.depth * 8 - v * part.depth * 0.8)
+  const blur = 10 + part.depth * 12
+  const shadow = useMotionTemplate`drop-shadow(${sx}px ${sy}px ${blur}px rgb(5 53 82 / ${0.12 + part.depth * 0.1}))`
   return (
-    <motion.div className="absolute inset-0" style={{ x, y }}>
+    <motion.div className="absolute inset-0" style={still ? undefined : { x, y, filter: shadow }}>
       {children}
     </motion.div>
   )
@@ -249,7 +167,7 @@ export default function AboutStructure({
   py: MotionValue<number>
 }) {
   const uid = useId().replace(/:/g, '')
-  const [assembled, setAssembled] = useState(false)
+  const [seen, setSeen] = useState(false)
   const { scrollYProgress } = useScroll({ target: sectionRef, offset: ['start end', 'end start'] })
   const drift = useTransform(scrollYProgress, [0, 0.5, 1], [24, 0, -24])
   // below desktop the structure shares a row with the eyebrow, so it must not drift into the headline
@@ -261,17 +179,20 @@ export default function AboutStructure({
     <motion.div
       className="pointer-events-none relative ms-auto -mb-5 aspect-[682/836] h-28 sm:h-40 lg:absolute lg:end-10 lg:top-2 lg:mb-0 lg:h-[320px] xl:end-20 xl:h-[350px]"
       style={reduce || !wide ? undefined : { y: drift }}
-      onViewportEnter={() => setAssembled(true)}
+      initial={reduce ? false : { opacity: 0 }}
+      whileInView={{ opacity: 1 }}
+      transition={{ duration: 0.9, ease: 'easeOut' }}
+      onViewportEnter={() => setSeen(true)}
       viewport={{ once: true, margin: '-12% 0px' }}
       aria-hidden
     >
       <motion.div
-        className={`iti-struct relative h-full w-full ${assembled && !reduce ? 'is-assembled' : ''}`}
+        className={`iti-struct relative h-full w-full ${seen && !reduce ? 'is-assembled' : ''}`}
         style={reduce ? undefined : { rotateX, rotateY, transformPerspective: 1400 }}
       >
         {PARTS.map((p) => (
-          <Layer key={p.key} part={p} px={px} py={py}>
-            <Plate part={p} uid={uid} assembled={assembled} still={reduce} />
+          <Layer key={p.key} part={p} px={px} py={py} still={reduce}>
+            <Plate part={p} uid={uid} still={reduce} />
           </Layer>
         ))}
       </motion.div>

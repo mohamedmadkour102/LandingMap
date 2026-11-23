@@ -3,6 +3,7 @@ import { Navigate, useParams } from 'react-router-dom'
 import ItiNav from './ItiNav'
 import { ItiAbout, ItiBusinesses, ItiContact, ItiFooter, ItiHero, ItiValues, ItiVision } from './ItiSections'
 import { COPY, type Lang } from './content'
+import { VersionSwitcher } from './variants'
 
 /** The globe (d3 + geo data) ships in its own chunk, fetched while the visitor reads the upper sections */
 const loadFootprint = () => import('./ItiFootprint')
@@ -87,6 +88,7 @@ export default function ItiPage() {
         <ItiContact lang={lang} />
       </main>
       <ItiFooter lang={lang} />
+      <VersionSwitcher />
     </div>
   )
 }

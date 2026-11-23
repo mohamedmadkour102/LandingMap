@@ -3,16 +3,19 @@ import {
   AnimatePresence,
   animate,
   motion,
+  useMotionTemplate,
   useMotionValue,
   useMotionValueEvent,
   useReducedMotion,
   useScroll,
   useSpring,
+  useInView,
   useTransform,
   type Variants,
 } from 'framer-motion'
 import { Reveal } from '../../components/Reveal'
 import { useCountUp } from '../../hooks/useCountUp'
+import { useVariant } from './variants'
 import ItiLogo from './ItiLogo'
 import AboutStructure from './AboutStructure'
 import { Picture } from './media'
@@ -203,8 +206,7 @@ export function ItiHero({ lang }: { lang: Lang }) {
           transition={{ delay: 1.1, duration: 1.6, ease: EASE_OUT }}
           aria-hidden
         />
-        <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-6 px-5 py-5 text-[0.72rem] tracking-[0.12em] text-white/60 uppercase sm:px-8">
-          <span className="leading-relaxed">{t.countries[lang]}</span>
+        <div className="mx-auto flex max-w-[1400px] items-center justify-end gap-6 px-5 py-5 text-[0.72rem] tracking-[0.12em] text-white/60 uppercase sm:px-8">
           <a href="#about" className="hidden shrink-0 items-center gap-3 sm:inline-flex hover:text-white">
             {t.scroll[lang]}
             <span className="relative h-8 w-px overflow-hidden bg-white/25">
@@ -235,8 +237,25 @@ function Arrow({ rtl, className = '' }: { rtl: boolean; className?: string }) {
 
 /* ------------------------------------------------------------------ */
 /* About — one Mist Gray band: headline and lead, the Group in five    */
-/* figures, the symbol as an engineered structure, then the pillars    */
+/* figures on a deep-blue plate, and the symbol as a structure          */
 /* ------------------------------------------------------------------ */
+
+/** A paragraph whose **marked** phrases read as its highlights */
+function Highlights({ text }: { text: string }) {
+  return (
+    <>
+      {text.split('**').map((part, i) =>
+        i % 2 ? (
+          <strong key={i} className="font-semibold text-[var(--iti-navy)]">
+            {part}
+          </strong>
+        ) : (
+          part
+        ),
+      )}
+    </>
+  )
+}
 
 /** Count-up driven by the strip's own reveal (reduced motion: the final value, at once) */
 function StatCount({ value, start, still }: { value: number; start: boolean; still: boolean }) {
@@ -264,39 +283,6 @@ const lineY: Variants = {
   },
 }
 
-const pillarParent: Variants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.16 } },
-}
-const pillarRule: Variants = {
-  hidden: { scaleX: 0 },
-  show: { scaleX: 1, transition: { duration: 0.9, ease: EASE_OUT } },
-}
-const pillarNum: Variants = {
-  hidden: { opacity: 0, y: 8 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.5, ease: EASE_OUT, delay: 0.3 },
-  },
-}
-const pillarTitle: Variants = {
-  hidden: { opacity: 0, y: 14 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.7, ease: EASE_OUT, delay: 0.4 },
-  },
-}
-const pillarBody: Variants = {
-  hidden: { opacity: 0, y: 10 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.7, ease: EASE_OUT, delay: 0.62 },
-  },
-}
-
 export function ItiAbout({ lang }: { lang: Lang }) {
   const t = COPY.about
   const reduce = !!useReducedMotion()
@@ -307,8 +293,9 @@ export function ItiAbout({ lang }: { lang: Lang }) {
   const px = useSpring(mx, { stiffness: 50, damping: 18 })
   const py = useSpring(my, { stiffness: 50, damping: 18 })
   const anim = reduce ? false : 'hidden'
-  // the figures count up as the strip itself animates in, so a resting "0" is never on screen
-  const [counted, setCounted] = useState(false)
+  // the figures count up again every time the plate comes back into view, scrolling down or up
+  const statsRef = useRef<HTMLDListElement | null>(null)
+  const counted = useInView(statsRef, { margin: '-60px 0px' })
   const n = COPY.stats.length
   return (
     <section
@@ -336,299 +323,65 @@ export function ItiAbout({ lang }: { lang: Lang }) {
             </Reveal>
             <SplitReveal text={t.title[lang]} emphasis={emph(lang, 3, 2)} className="iti-h2 iti-about-title mt-5" />
             <Reveal delay={0.1}>
-              <p className="mt-7 max-w-[56ch] text-[1.06rem] leading-[1.8] text-[var(--iti-ink-soft)] sm:text-[1.12rem]">{t.lead[lang]}</p>
+              <p className="mt-7 max-w-[60ch] text-[1.06rem] leading-[1.8] text-[var(--iti-ink-soft)] sm:text-[1.12rem]">
+                <Highlights text={t.lead[lang]} />
+              </p>
             </Reveal>
           </div>
         </div>
 
-        {/* the Group at a glance — the hairlines draw in, the figures follow one by one */}
+        {/* the Group at a glance — a deep-blue plate set into the Mist band; the figures count up every time it comes into view */}
         <motion.dl
-          className="relative mt-16 grid grid-cols-2 sm:mt-20 lg:grid-cols-5"
+          className="iti-stats relative mt-16 grid grid-cols-2 overflow-hidden rounded-[26px] px-6 sm:mt-20 sm:px-10 lg:grid-cols-5 lg:px-4"
           variants={stripParent}
           initial={anim}
           whileInView="show"
           viewport={{ once: true, margin: '-60px' }}
-          onViewportEnter={() => setCounted(true)}
+          ref={statsRef}
         >
-          <motion.span variants={lineX} className="absolute inset-x-0 top-0 h-px origin-left bg-[var(--iti-line)] rtl:origin-right" aria-hidden />
-          <motion.span variants={lineX} className="absolute inset-x-0 bottom-0 h-px origin-left bg-[var(--iti-line)] rtl:origin-right" aria-hidden />
           {COPY.stats.map((s, i) => (
             <motion.div
               key={s.label.en}
               variants={stripItem}
-              className={`group relative flex flex-col py-7 sm:py-9 ${i % 2 === 0 ? 'pe-4' : 'ps-5'} lg:px-7 lg:first:ps-0 lg:last:pe-0 ${
-                i === n - 1 ? 'col-span-2 lg:col-span-1' : ''
-              }`}
+              className={`group relative flex flex-col py-8 sm:py-10 ${i % 2 === 0 ? 'pe-4' : 'ps-5'} lg:px-7 ${i === n - 1 ? 'col-span-2 lg:col-span-1' : ''}`}
             >
               {/* dividers: between columns, and between rows on phones */}
               {i > 0 && (
                 <motion.span
                   variants={lineY}
-                  className={`absolute inset-y-5 start-0 w-px origin-top bg-[var(--iti-line)] ${i % 2 === 1 ? '' : 'hidden lg:block'}`}
+                  className={`absolute inset-y-7 start-0 w-px origin-top bg-white/14 ${i % 2 === 1 ? '' : 'hidden lg:block'}`}
                   aria-hidden
                 />
               )}
               {i >= 2 && (
-                <motion.span
-                  variants={lineX}
-                  className="absolute inset-x-0 top-0 h-px origin-left bg-[var(--iti-line)] lg:hidden rtl:origin-right"
-                  aria-hidden
-                />
+                <motion.span variants={lineX} className="absolute inset-x-0 top-0 h-px origin-left bg-white/14 lg:hidden rtl:origin-right" aria-hidden />
               )}
-              <dt className="order-last mt-3 text-[0.84rem] leading-snug font-medium text-[var(--iti-ink-soft)] transition-colors duration-300 group-hover:text-[var(--iti-navy)]">
+              <dt className="order-last mt-3 text-[0.84rem] leading-snug font-medium text-white/65 transition-colors duration-300 group-hover:text-white">
                 {s.label[lang]}
               </dt>
               <dd
-                className="relative w-fit pb-2 font-[family-name:var(--iti-head)] text-[clamp(2.1rem,3.2vw,3rem)] leading-none font-extrabold tracking-tight text-[var(--iti-navy)] transition-transform duration-500 ease-out motion-safe:group-hover:-translate-y-1"
+                className="relative w-fit pb-2 font-[family-name:var(--iti-head)] text-[clamp(2.1rem,3.2vw,3rem)] leading-none font-extrabold tracking-tight text-white transition-transform duration-500 ease-out motion-safe:group-hover:-translate-y-1"
                 dir="ltr"
               >
-                <span className="text-[var(--iti-copper)]">{s.prefix}</span>
+                <span className="text-[var(--iti-champagne)]">{s.prefix}</span>
                 <StatCount value={s.value} start={counted} still={reduce} />
-                <span className="text-[var(--iti-copper)]">{s.suffix}</span>
+                <span className="text-[var(--iti-champagne)]">{s.suffix}</span>
                 {/* copper underline grows under the figure in focus */}
                 <span
-                  className="absolute inset-x-0 bottom-0 h-[2px] origin-left scale-x-0 bg-[var(--iti-copper)] transition-transform duration-500 ease-out motion-safe:group-hover:scale-x-100"
+                  className="absolute inset-x-0 bottom-0 h-[2px] origin-left scale-x-0 bg-[var(--iti-copper-soft)] transition-transform duration-500 ease-out motion-safe:group-hover:scale-x-100"
                   aria-hidden
                 />
               </dd>
             </motion.div>
           ))}
         </motion.dl>
-
-        {/* the pillars, on the same Mist band — the rules draw, the numbers tick in, the words follow */}
-        <div className="mt-20 grid gap-10 sm:mt-28 lg:grid-cols-12 lg:gap-12">
-          <Reveal className="lg:col-span-4">
-            <h3 className="font-[family-name:var(--iti-head)] text-[clamp(1.7rem,2.6vw,2.3rem)] leading-tight font-extrabold tracking-tight text-[var(--iti-navy)]">
-              {t.definesTitle[lang]}
-            </h3>
-          </Reveal>
-          <motion.ol
-            className="grid gap-10 sm:grid-cols-3 sm:gap-8 lg:col-span-8"
-            variants={pillarParent}
-            initial={anim}
-            whileInView="show"
-            viewport={{ once: true, margin: '-60px' }}
-          >
-            {t.pillars.map((p, i) => (
-              <motion.li key={p.title.en} className="iti-pillar group relative pt-6" variants={{ hidden: {}, show: {} }}>
-                <motion.span
-                  variants={pillarRule}
-                  className="iti-pillar-rule absolute inset-x-0 top-0 h-[2px] origin-left bg-[var(--iti-copper)] rtl:origin-right"
-                  aria-hidden
-                />
-                <div className="transition-transform duration-500 ease-out motion-safe:group-hover:-translate-y-1">
-                  <motion.span
-                    variants={pillarNum}
-                    className="block text-[0.72rem] font-semibold tracking-[0.18em] text-[var(--iti-copper)] rtl:text-right"
-                    dir="ltr"
-                  >
-                    {String(i + 1).padStart(2, '0')}
-                  </motion.span>
-                  <motion.h4
-                    variants={pillarTitle}
-                    className="mt-3 font-[family-name:var(--iti-head)] text-[1.08rem] leading-snug font-bold text-[var(--iti-navy)]"
-                  >
-                    {p.title[lang]}
-                  </motion.h4>
-                  <motion.p variants={pillarBody} className="mt-2.5 text-[0.95rem] leading-[1.7] text-[var(--iti-ink-soft)]">
-                    {p.body[lang]}
-                  </motion.p>
-                </div>
-              </motion.li>
-            ))}
-          </motion.ol>
-        </div>
       </div>
     </section>
   )
 }
 
-/* ------------------------------------------------------------------ */
-/* Vision & Mission — "Our Purpose": today's mission, tomorrow's      */
-/* vision, beside sweeping navy ribbons lit along their copper edges   */
-/* ------------------------------------------------------------------ */
-
-/* ribbon edges, bottom-left → top-right (viewBox 0 0 800 1000) */
-const RIBBON_EDGES = [
-  { a: [250, 1000], c1: [300, 640], c2: [520, 300], b: [800, 40] },
-  { a: [380, 1000], c1: [420, 700], c2: [600, 420], b: [800, 250] },
-  { a: [500, 1000], c1: [540, 780], c2: [660, 600], b: [800, 480] },
-  { a: [620, 1000], c1: [650, 880], c2: [720, 780], b: [800, 720] },
-] as const
-type Edge = (typeof RIBBON_EDGES)[number]
-const fwd = (e: Edge) => `M${e.a} C${e.c1} ${e.c2} ${e.b}`
-const band = (e: Edge, f: Edge) => `${fwd(e)} L${f.b} C${f.c2} ${f.c1} ${f.a} Z`
-
-/** Abstract architecture in brand colours — built in SVG, so it is crisp, light, mirrored for Arabic and animatable */
-function PurposeRibbons({ reduce }: { reduce: boolean }) {
-  const ref = useRef<HTMLDivElement | null>(null)
-  const [lit, setLit] = useState(false)
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] })
-  const y = useTransform(scrollYProgress, [0, 1], [50, -50])
-  const E = RIBBON_EDGES
-  return (
-    <motion.div
-      ref={ref}
-      className={`iti-ribbons pointer-events-none absolute -inset-y-16 end-0 -z-10 w-full opacity-45 sm:w-[80%] lg:w-[48%] lg:opacity-100 ${lit || reduce ? 'is-lit' : ''}`}
-      style={reduce ? undefined : { y }}
-      onViewportEnter={() => setLit(true)}
-      viewport={{ once: true, margin: '-15% 0px' }}
-      aria-hidden
-    >
-      <svg viewBox="0 0 800 1000" preserveAspectRatio="xMaxYMid slice" className="h-full w-full rtl:-scale-x-100">
-        <defs>
-          <linearGradient id="rb-face" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor="#14507a" />
-            <stop offset="0.55" stopColor="#082f4a" />
-            <stop offset="1" style={{ stopColor: 'var(--iti-ribbon-floor)' }} />
-          </linearGradient>
-          <linearGradient id="rb-edge" gradientUnits="userSpaceOnUse" x1="250" y1="1000" x2="800" y2="0">
-            <stop offset="0" stopColor="#c27448" stopOpacity="0" />
-            <stop offset="0.3" stopColor="#c27448" stopOpacity="0.55" />
-            <stop offset="0.55" stopColor="#f3d3b2" stopOpacity="0.95" />
-            <stop offset="0.78" stopColor="#e39a6b" stopOpacity="0.5" />
-            <stop offset="1" stopColor="#e39a6b" stopOpacity="0" />
-          </linearGradient>
-          <linearGradient id="rb-floor" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0" stopColor="#e39a6b" stopOpacity="0" />
-            <stop offset="0.45" stopColor="#f3d3b2" stopOpacity="0.7" />
-            <stop offset="1" stopColor="#e39a6b" stopOpacity="0" />
-          </linearGradient>
-          {/* fine vertical fluting, like the cladding of a facade */}
-          <pattern id="rb-flute" width="7" height="10" patternUnits="userSpaceOnUse">
-            <rect width="1" height="10" fill="#ffffff" opacity="0.045" />
-          </pattern>
-          <filter id="rb-glow" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="5" />
-          </filter>
-          <filter id="rb-wash" x="-30%" y="-30%" width="160%" height="160%">
-            <feGaussianBlur stdDeviation="22" />
-          </filter>
-          {E.slice(0, 3).map((e, i) => (
-            <clipPath key={i} id={`rb-clip-${i}`}>
-              <path d={band(e, E[i + 1])} />
-            </clipPath>
-          ))}
-        </defs>
-
-        {/* faces */}
-        {E.slice(0, 3).map((e, i) => (
-          <g key={i} className="iti-ribbon-face" style={{ transitionDelay: `${0.15 * i}s` }}>
-            <path d={band(e, E[i + 1])} fill="url(#rb-face)" opacity={0.95 - i * 0.12} />
-            <path d={band(e, E[i + 1])} fill="url(#rb-flute)" />
-            {/* copper light spilling from the lit edge onto the face */}
-            <g clipPath={`url(#rb-clip-${i})`}>
-              <path d={fwd(e)} stroke="url(#rb-edge)" strokeWidth={70} fill="none" filter="url(#rb-wash)" opacity={0.42} />
-            </g>
-          </g>
-        ))}
-        <path d={`${fwd(E[3])} L800 1000 Z`} style={{ fill: 'var(--iti-ribbon-floor)' }} className="iti-ribbon-face" />
-
-        {/* copper light along the leading edges — a soft bloom under a crisp line */}
-        {E.map((e, i) => (
-          <g key={i}>
-            <path d={fwd(e)} className="iti-ribbon-edge" stroke="url(#rb-edge)" strokeWidth={7} fill="none" filter="url(#rb-glow)" opacity={0.55} pathLength={1} style={{ animationDelay: `${0.35 + i * 0.18}s` }} />
-            <path d={fwd(e)} className="iti-ribbon-edge" stroke="url(#rb-edge)" strokeWidth={1.6} fill="none" pathLength={1} style={{ animationDelay: `${0.35 + i * 0.18}s` }} />
-          </g>
-        ))}
-
-        {/* light grazing the floor */}
-        <path d="M0 965 Q 380 905 800 940" className="iti-ribbon-edge" stroke="url(#rb-floor)" strokeWidth={1.4} fill="none" pathLength={1} style={{ animationDelay: '1.1s' }} />
-      </svg>
-    </motion.div>
-  )
-}
-
-function MissionIcon() {
-  // three stacked plates — building and operating, layer on layer
-  return (
-    <svg viewBox="0 0 40 40" className="h-9 w-9 text-[var(--iti-copper-soft)]" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinejoin="round" aria-hidden>
-      <path d="M20 6 34 13 20 20 6 13Z" />
-      <path d="M6 19.5 20 26.5 34 19.5" />
-      <path d="M6 26 20 33 34 26" />
-    </svg>
-  )
-}
-
-function VisionIcon() {
-  // a horizon with a path rising towards it
-  return (
-    <svg viewBox="0 0 40 40" className="h-9 w-9 text-[var(--iti-copper-soft)]" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M4 30h32" />
-      <path d="M8 30c4-7 9-11 16-13" />
-      <path d="M20 13.5 25 16.6 22 21.4" />
-      <circle cx="31" cy="11" r="3.2" />
-    </svg>
-  )
-}
-
-export function ItiVision({ lang }: { lang: Lang }) {
-  const p = COPY.purpose
-  const reduce = !!useReducedMotion()
-  const blocks = [
-    { key: 'mission', t: COPY.mission, Icon: MissionIcon },
-    { key: 'vision', t: COPY.vision, Icon: VisionIcon },
-  ] as const
-  return (
-    <section id="vision" className="iti-grain iti-purpose relative isolate overflow-hidden py-24 text-white sm:py-32 lg:py-40">
-      <PurposeRibbons reduce={reduce} />
-      {/* keeps the copy side calm on narrow screens, where the ribbons sit behind the text */}
-      <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgb(5_53_82/0.92)_0%,rgb(5_53_82/0.55)_60%,transparent_100%)] lg:hidden rtl:bg-[linear-gradient(270deg,rgb(5_53_82/0.92)_0%,rgb(5_53_82/0.55)_60%,transparent_100%)]" />
-
-      <div className="mx-auto max-w-[1400px] px-5 sm:px-8">
-        <div className="lg:max-w-[62%]">
-          <Reveal>
-            <p className="iti-eyebrow iti-eyebrow-light">{p.eyebrow[lang]}</p>
-          </Reveal>
-          <SplitReveal text={p.title[lang]} emphasis={emph(lang, 3, 3)} className="iti-purpose-title mt-6" />
-          <Reveal delay={0.1}>
-            <p className="mt-6 max-w-[48ch] text-[1.08rem] leading-relaxed text-white/70 sm:text-[1.15rem]">{p.lead[lang]}</p>
-          </Reveal>
-
-          <div className="relative mt-14 grid gap-12 sm:mt-16 sm:grid-cols-2 sm:gap-0">
-            {/* hairline between the two statements */}
-            <motion.span
-              className="absolute inset-y-2 start-1/2 hidden w-px origin-top bg-white/18 sm:block"
-              initial={reduce ? false : { scaleY: 0 }}
-              whileInView={{ scaleY: 1 }}
-              viewport={{ once: true, margin: '-60px' }}
-              transition={{ duration: 1.1, ease: EASE_OUT, delay: 0.3 }}
-              aria-hidden
-            />
-            {blocks.map(({ key, t, Icon }, i) => (
-              <motion.div
-                key={key}
-                className={i === 0 ? 'sm:pe-10 lg:pe-12' : 'sm:ps-10 lg:ps-12'}
-                initial={reduce ? false : { opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-60px' }}
-                transition={{ duration: 0.8, ease: EASE_OUT, delay: 0.15 + i * 0.18 }}
-              >
-                <div className="flex items-center gap-4">
-                  <Icon />
-                  <p className="text-[0.74rem] font-semibold tracking-[0.22em] text-white/90 uppercase rtl:tracking-normal">{t.eyebrow[lang]}</p>
-                </div>
-                <h3 className="mt-6 font-[family-name:var(--iti-head)] text-[clamp(1.45rem,2.2vw,2rem)] leading-[1.2] font-bold tracking-[-0.01em] text-white">
-                  {t.headline[lang]}
-                </h3>
-                <p className="mt-4 max-w-[40ch] text-[1rem] leading-[1.7] text-white/65">{t.body[lang]}</p>
-              </motion.div>
-            ))}
-          </div>
-
-          <motion.span
-            className="mt-16 block h-[2px] w-20 origin-left bg-[var(--iti-copper-soft)] rtl:origin-right"
-            initial={reduce ? false : { scaleX: 0 }}
-            whileInView={{ scaleX: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.9, ease: EASE_OUT, delay: 0.6 }}
-            aria-hidden
-          />
-        </div>
-      </div>
-    </section>
-  )
-}
+/* Vision & Mission lives in its own file: a pinned, scroll-driven scene */
+export { ItiVision } from './ItiPurpose'
 
 /* ------------------------------------------------------------------ */
 /* Values — six principles strung on one rising copper line. A spark   */
@@ -803,7 +556,7 @@ function ValuesPath({ lang, reduce }: { lang: Lang; reduce: boolean }) {
           </defs>
           <path ref={measureRef} d={d} fill="none" stroke="none" />
           {/* the whole route, faint */}
-          <path d={d} className={`iti-vp-base ${arrived || reduce ? 'is-drawn' : ''}`} fill="none" stroke="rgb(169 97 58 / 0.28)" strokeWidth={1.4} vectorEffect="non-scaling-stroke" pathLength={1} />
+          <path d={d} className={`iti-vp-base ${arrived || reduce ? 'is-drawn' : ''}`} fill="none" stroke="rgb(240 201 162 / 0.22)" strokeWidth={1.4} vectorEffect="non-scaling-stroke" pathLength={1} />
           {/* the lit route: glow + crisp line, dash-revealed up to `len` */}
           {geo && (
             <>
@@ -877,15 +630,15 @@ function ValuesPath({ lang, reduce }: { lang: Lang; reduce: boolean }) {
               transition={{ duration: 0.6, ease: EASE_OUT, delay: arrived && active == null && reached < 0 ? 0.9 + i * 0.1 : 0 }}
               onPointerEnter={() => setActive(i)}
             >
-              {i > 0 && <span className="absolute inset-y-1 start-0 w-px bg-[var(--iti-line)]" aria-hidden />}
+              {i > 0 && <span className="absolute inset-y-1 start-0 w-px bg-white/12" aria-hidden />}
               <h3
                 className={`font-[family-name:var(--iti-head)] text-[0.92rem] font-extrabold tracking-[0.14em] uppercase transition-colors duration-300 rtl:text-[1.05rem] rtl:tracking-normal ${
-                  active === i ? 'text-[var(--iti-copper)]' : 'text-[var(--iti-navy)]'
+                  active === i ? 'text-[var(--iti-copper-soft)]' : 'text-white'
                 }`}
               >
                 {v.title[lang]}
               </h3>
-              <p className="mt-3 text-[0.9rem] leading-[1.65] text-[var(--iti-ink-soft)]">{v.body[lang]}</p>
+              <p className="mt-3 text-[0.9rem] leading-[1.65] text-white/65">{v.body[lang]}</p>
             </motion.li>
           )
         })}
@@ -907,7 +660,7 @@ function ValuesTimeline({ lang, reduce }: { lang: Lang; reduce: boolean }) {
   return (
     <ol ref={ref} className="relative lg:hidden">
       {/* the line runs through the centres of the nodes */}
-      <span className="absolute top-8 bottom-8 start-8 w-px bg-[rgb(169_97_58/0.25)]" aria-hidden />
+      <span className="absolute top-8 bottom-8 start-8 w-px bg-white/15" aria-hidden />
       <motion.span
         className="absolute top-8 bottom-8 start-8 w-[2px] origin-top -translate-x-[0.5px] bg-gradient-to-b from-[var(--iti-copper)] to-[#f0c9a2] rtl:translate-x-[0.5px]"
         style={reduce ? undefined : { scaleY: fill }}
@@ -928,12 +681,12 @@ function ValuesTimeline({ lang, reduce }: { lang: Lang; reduce: boolean }) {
           <div id={`value-m-${v.id}`} className="pt-2">
             <h3
               className={`font-[family-name:var(--iti-head)] text-[0.95rem] font-extrabold tracking-[0.12em] uppercase transition-colors duration-300 rtl:text-[1.05rem] rtl:tracking-normal ${
-                active === i || reached === i ? 'text-[var(--iti-copper)]' : 'text-[var(--iti-navy)]'
+                active === i || reached === i ? 'text-[var(--iti-copper-soft)]' : 'text-white'
               }`}
             >
               {v.title[lang]}
             </h3>
-            <p className="mt-2 text-[0.95rem] leading-[1.65] text-[var(--iti-ink-soft)]">{v.body[lang]}</p>
+            <p className="mt-2 text-[0.95rem] leading-[1.65] text-white/65">{v.body[lang]}</p>
           </div>
         </li>
       ))}
@@ -944,35 +697,43 @@ function ValuesTimeline({ lang, reduce }: { lang: Lang; reduce: boolean }) {
 export function ItiValues({ lang }: { lang: Lang }) {
   const t = COPY.values
   const reduce = !!useReducedMotion()
+  const ref = useRef<HTMLElement | null>(null)
+  // the thread from Vision & Mission draws on down as the principles arrive, and turns into the eyebrow's copper rule
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'start 0.35'] })
+  const thread = useSpring(scrollYProgress, { stiffness: 120, damping: 26 })
   return (
-    <section id="values" className="iti-values relative isolate overflow-hidden py-24 sm:py-32">
-      {/* soft paper sheets sweeping across the Mist Gray, a thread of copper light along the lower one */}
+    <section id="values" ref={ref} className="iti-values relative isolate overflow-hidden pt-20 pb-24 sm:pt-24 sm:pb-32">
+      {/* the night carried over from Vision & Mission: a steel glow and a copper thread low across the field */}
       <svg className="pointer-events-none absolute inset-0 -z-10 h-full w-full rtl:-scale-x-100" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden>
         <defs>
-          <linearGradient id="vb-sheet" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor="#ffffff" stopOpacity="0.75" />
-            <stop offset="1" stopColor="#ffffff" stopOpacity="0" />
-          </linearGradient>
+          <radialGradient id="vb-glow" cx="0.72" cy="0.62" r="0.5">
+            <stop offset="0" stopColor="#215c7e" stopOpacity="0.32" />
+            <stop offset="1" stopColor="#215c7e" stopOpacity="0" />
+          </radialGradient>
           <linearGradient id="vb-thread" x1="0" y1="0" x2="1" y2="0">
             <stop offset="0" stopColor="#e39a6b" stopOpacity="0" />
-            <stop offset="0.45" stopColor="#e39a6b" stopOpacity="0.7" />
+            <stop offset="0.45" stopColor="#e39a6b" stopOpacity="0.45" />
             <stop offset="1" stopColor="#e39a6b" stopOpacity="0" />
           </linearGradient>
         </defs>
-        <path d="M1000 0C1180 120 1380 160 1600 150V0Z" fill="url(#vb-sheet)" />
-        <path d="M1150 0C1260 70 1420 100 1600 96" fill="none" stroke="#fff" strokeOpacity="0.8" />
-        <path d="M0 760C260 720 520 760 760 900H0Z" fill="url(#vb-sheet)" opacity="0.8" />
+        <rect width="1600" height="900" fill="url(#vb-glow)" />
+        <path d="M1150 0C1260 70 1420 100 1600 96" fill="none" stroke="#fff" strokeOpacity="0.07" />
         <path d="M0 790C240 755 470 790 690 900" fill="none" stroke="url(#vb-thread)" strokeWidth="1.4" />
       </svg>
 
-      <div className="mx-auto max-w-[1400px] px-5 sm:px-8">
+      <div className="relative mx-auto max-w-[1400px] px-5 sm:px-8">
+        <motion.span
+          className="iti-values-thread absolute start-[calc(1.25rem+7px)] -top-20 h-[calc(5rem+0.4rem)] w-px origin-top sm:start-[calc(2rem+7px)] sm:-top-24 sm:h-[calc(6rem+0.4rem)]"
+          style={reduce ? undefined : { scaleY: thread }}
+          aria-hidden
+        />
         <div className="max-w-[760px]">
           <Reveal>
-            <p className="iti-eyebrow">{t.eyebrow[lang]}</p>
+            <p className="iti-eyebrow iti-eyebrow-light">{t.eyebrow[lang]}</p>
           </Reveal>
           <SplitReveal text={t.title[lang]} emphasis={emph(lang, 1, 1)} className="iti-h2 iti-values-title mt-5" />
           <Reveal delay={0.1}>
-            <p className="mt-6 max-w-[58ch] text-[1.06rem] leading-[1.75] text-[var(--iti-ink-soft)] sm:text-[1.12rem]">{t.lead[lang]}</p>
+            <p className="mt-6 max-w-[58ch] text-[1.06rem] leading-[1.75] text-white/70 sm:text-[1.12rem]">{t.lead[lang]}</p>
           </Reveal>
         </div>
 
@@ -1254,11 +1015,15 @@ function Field({ id, label, required, error, children, className = '' }: { id: s
   )
 }
 
-function InquiryForm({ lang }: { lang: Lang }) {
+function InquiryForm({ lang, preset }: { lang: Lang; preset: { id: InquiryId | null; n: number } }) {
   const f = CONTACT_FORM
   const reduce = !!useReducedMotion()
   const countries = useCountries(lang)
   const [topic, setTopic] = useState<InquiryId | null>(null)
+  // a route chosen in the section opens the form already set to it; the rest of the draft is kept
+  useEffect(() => {
+    if (preset.id) setTopic(preset.id)
+  }, [preset])
   const [values, setValues] = useState<FormValues>({})
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [tried, setTried] = useState(false)
@@ -1546,10 +1311,224 @@ function InquiryForm({ lang }: { lang: Lang }) {
   )
 }
 
-export function ItiContact({ lang }: { lang: Lang }) {
+type Origin = { x: number; y: number }
+/** how a modal arrives: `rise` lifts into the middle; `iris` opens out of the button that was pressed;
+ *  `sheet` comes up from the foot of the screen; `curtain` opens from a line across the middle */
+type ModalEnter = 'rise' | 'iris' | 'sheet' | 'curtain'
+
+/** The form, kept out of the page until it is asked for, on a native modal dialog (focus stays inside, Esc closes,
+ *  the page behind is inert, focus returns to the button that opened it). `drawer` slides in from the reading edge;
+ *  `modal` arrives in the middle of the screen, in one of four ways (`enter`). The form stays mounted, so a
+ *  half-written inquiry survives closing. */
+function InquiryDrawer({
+  lang,
+  open,
+  preset,
+  onClose,
+  mode = 'drawer',
+  enter = 'rise',
+  origin = null,
+}: {
+  lang: Lang
+  open: boolean
+  preset: { id: InquiryId | null; n: number }
+  onClose: () => void
+  mode?: 'drawer' | 'modal'
+  enter?: ModalEnter
+  /** `iris` only: the point on screen the modal opens from */
+  origin?: Origin | null
+}) {
+  const f = CONTACT_FORM
+  const reduce = !!useReducedMotion()
+  const rtl = lang === 'ar'
+  const ref = useRef<HTMLDialogElement | null>(null)
+  const panel = useRef<HTMLDivElement | null>(null)
+  const modal = mode === 'modal'
+  const how: ModalEnter = modal && !reduce ? enter : 'rise'
+
+  // the iris: a circle that opens from the pressed button until it has cleared the whole screen
+  const irisR = useMotionValue(0)
+  const irisX = useMotionValue(0)
+  const irisY = useMotionValue(0)
+  const iris = useMotionTemplate`circle(${irisR}px at ${irisX}px ${irisY}px)`
+  useEffect(() => {
+    if (how !== 'iris') return
+    if (open) {
+      irisX.set(origin?.x ?? window.innerWidth / 2)
+      irisY.set(origin?.y ?? window.innerHeight / 2)
+    }
+    const c = animate(irisR, open ? Math.hypot(window.innerWidth, window.innerHeight) : 0, {
+      duration: open ? 0.75 : 0.3,
+      ease: open ? EASE_OUT : EASE_IN_OUT,
+    })
+    return () => c.stop()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, how])
+
+  useEffect(() => {
+    const d = ref.current
+    if (!d || !open || d.open) return
+    d.showModal()
+    document.documentElement.style.overflow = 'hidden'
+    panel.current?.scrollTo({ top: 0 })
+    // land on the first thing to answer: the route if none is set yet, otherwise the name
+    window.requestAnimationFrame(() => {
+      const target = preset.id ? d.querySelector<HTMLElement>('#cf-name') : d.querySelector<HTMLElement>('input[name="topic"]')
+      target?.focus({ preventScroll: true })
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
+
+  useEffect(
+    () => () => {
+      document.documentElement.style.overflow = ''
+    },
+    [],
+  )
+
+  // once the sheet has gone, the dialog closes and the page scrolls again
+  const finish = () => {
+    if (open || !ref.current?.open) return
+    ref.current.close()
+    document.documentElement.style.overflow = ''
+  }
+
+  const shut = 'inset(50% 0% 50% 0% round 24px)'
+  const wide = 'inset(0% 0% 0% 0% round 24px)'
+  const off = reduce
+    ? { x: 0, y: 0, scale: 1, opacity: 0 }
+    : !modal
+      ? { x: rtl ? '-100%' : '100%', y: 0, scale: 1, opacity: 1 }
+      : how === 'sheet'
+        ? { x: 0, y: '104%', scale: 1, opacity: 1 }
+        : how === 'curtain'
+          ? { x: 0, y: 0, scale: 1, opacity: 0, clipPath: shut }
+          : how === 'iris'
+            ? { x: 0, y: 0, scale: 0.96, opacity: 0 }
+            : { x: 0, y: 28, scale: 0.98, opacity: 0 }
+  const on = how === 'curtain' ? { x: 0, y: 0, scale: 1, opacity: 1, clipPath: wide } : { x: 0, y: 0, scale: 1, opacity: 1 }
+  return (
+    <dialog
+      ref={ref}
+      className="iti-drawer"
+      aria-labelledby={`cf-${mode}-title`}
+      onCancel={(e) => {
+        e.preventDefault()
+        onClose()
+      }}
+    >
+      <motion.div
+        className="iti-drawer-scrim"
+        initial={false}
+        animate={{ opacity: open ? 1 : 0 }}
+        transition={{ duration: reduce ? 0.15 : 0.35 }}
+        onClick={onClose}
+        aria-hidden
+      />
+      <motion.div
+        className={
+          !modal
+            ? 'contents'
+            : how === 'sheet'
+              ? 'pointer-events-none absolute inset-0 grid place-items-end justify-items-center px-0 pt-6 sm:px-6'
+              : 'pointer-events-none absolute inset-0 grid place-items-center p-3 sm:p-6'
+        }
+        style={how === 'iris' ? { clipPath: iris } : undefined}
+      >
+        <motion.div
+          ref={panel}
+          className={modal ? `iti-modal-panel pointer-events-auto ${how === 'sheet' ? 'is-sheet' : ''}` : 'iti-drawer-panel'}
+          initial={false}
+          animate={open ? on : off}
+          transition={
+            reduce
+              ? { duration: 0.15 }
+              : { type: 'tween', duration: open ? (!modal ? 0.55 : how === 'rise' ? 0.45 : 0.65) : 0.3, ease: open ? EASE_OUT : EASE_IN_OUT }
+          }
+          onAnimationComplete={finish}
+        >
+          <div className="iti-drawer-head">
+            <div>
+              <p className="iti-eyebrow">{f.launchEyebrow[lang]}</p>
+              <h3 id={`cf-${mode}-title`} className="mt-3 font-[family-name:var(--iti-head)] text-[clamp(1.4rem,2.2vw,1.8rem)] leading-tight font-extrabold text-[var(--iti-navy)]">
+                {f.drawerTitle[lang]}
+              </h3>
+            </div>
+            <CloseButton label={COPY.nav.close[lang]} onClick={onClose} />
+          </div>
+          <div className="px-6 pt-6 pb-10 sm:px-10">
+            <InquiryForm lang={lang} preset={preset} />
+          </div>
+        </motion.div>
+      </motion.div>
+    </dialog>
+  )
+}
+
+function CloseButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick} className="iti-drawer-close" aria-label={label}>
+      <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden>
+        <path d="M3.5 3.5l9 9M12.5 3.5l-9 9" />
+      </svg>
+    </button>
+  )
+}
+
+/** the form's open state and the route it should open on, shared by every version */
+function useInquiry() {
+  const [open, setOpen] = useState(false)
+  const [preset, setPreset] = useState<{ id: InquiryId | null; n: number }>({ id: null, n: 0 })
+  const openForm = (id: InquiryId | null) => {
+    setPreset((p) => ({ id, n: p.n + 1 }))
+    setOpen(true)
+  }
+  return { open, preset, openForm, close: () => setOpen(false) }
+}
+
+/** Version 1 — what stands in the section instead of the form: the four routes in; each opens the form set to it */
+function InquiryLaunch({ lang, onOpen }: { lang: Lang; onOpen: (id: InquiryId | null) => void }) {
+  const f = CONTACT_FORM
+  const rtl = lang === 'ar'
+  return (
+    <div className="iti-launch relative overflow-hidden rounded-[26px] p-7 text-white sm:p-10">
+      <p className="iti-eyebrow iti-eyebrow-light">{f.launchEyebrow[lang]}</p>
+      <h3 className="mt-4 max-w-[22ch] font-[family-name:var(--iti-head)] text-[clamp(1.5rem,2.4vw,2rem)] leading-tight font-extrabold">{f.launchTitle[lang]}</h3>
+      <ul className="mt-8">
+        {INQUIRIES.map((q) => (
+          <li key={q.id} className="border-t border-white/12 last:border-b">
+            <button type="button" onClick={() => onOpen(q.id)} className="iti-route group" aria-haspopup="dialog">
+              <LineIcon className="h-8 w-8 shrink-0 text-[var(--iti-champagne)]">{INQUIRY_ICONS[q.id]}</LineIcon>
+              <span className="min-w-0 flex-1 text-start">
+                <span className="block font-[family-name:var(--iti-head)] text-[1.02rem] leading-snug font-bold">{q.title[lang]}</span>
+                <span className="mt-1 block text-[0.86rem] leading-snug text-white/60">{q.blurb[lang]}</span>
+              </span>
+              <span className="iti-route-arrow" aria-hidden>
+                <Arrow rtl={rtl} />
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
+        <Magnetic strength={0.18}>
+          <button type="button" onClick={() => onOpen(null)} className="iti-btn iti-btn-copper group shrink-0" aria-haspopup="dialog">
+            {f.launchCta[lang]}
+            <Arrow rtl={rtl} />
+          </button>
+        </Magnetic>
+        <p className="max-w-[44ch] text-[0.78rem] leading-relaxed text-white/55">{f.launchNote[lang]}</p>
+      </div>
+    </div>
+  )
+}
+
+/** Email, head office and website — stacked beside the copy, or in a row of three under it; on Mist or on navy */
+function DirectLines({ lang, layout = 'stack', tone = 'light' }: { lang: Lang; layout?: 'stack' | 'row'; tone?: 'light' | 'dark' }) {
   const t = COPY.contact
   const time = useBarcelonaTime(lang)
   const [copied, setCopied] = useState(false)
+  const dark = tone === 'dark'
 
   async function copyEmail() {
     try {
@@ -1575,7 +1554,7 @@ export function ItiContact({ lang }: { lang: Lang }) {
           <a href={`mailto:${CONTACT.email}`} className="iti-link-underline" dir="ltr">
             {CONTACT.email}
           </a>
-          <button type="button" onClick={copyEmail} className="iti-text-btn" aria-live="polite">
+          <button type="button" onClick={copyEmail} className={`iti-text-btn ${dark ? 'iti-text-btn-light' : ''}`} aria-live="polite">
             {copied ? t.copied[lang] : t.copy[lang]}
           </button>
         </span>
@@ -1592,7 +1571,7 @@ export function ItiContact({ lang }: { lang: Lang }) {
       v: (
         <>
           <span className="block max-w-[24ch]">{t.address[lang]}</span>
-          <span className="mt-1.5 block text-[0.82rem] font-normal text-[var(--iti-ink-soft)]">
+          <span className={`mt-1.5 block text-[0.82rem] font-normal ${dark ? 'text-white/55' : 'text-[var(--iti-ink-soft)]'}`}>
             {t.localTime[lang]} · <span dir="ltr">{time}</span>
           </span>
         </>
@@ -1614,53 +1593,477 @@ export function ItiContact({ lang }: { lang: Lang }) {
     },
   ]
 
+  const row = layout === 'row'
+  const ink = dark ? 'text-white' : 'text-[var(--iti-navy)]'
+  const rule = dark ? 'border-white/12' : 'border-[var(--iti-line)]'
+  return (
+    <dl className={row ? `grid border-t ${rule} sm:grid-cols-3` : ''}>
+      {direct.map((d, i) => (
+        <div
+          key={d.k}
+          className={
+            row
+              ? `flex gap-5 py-7 sm:px-7 sm:first:ps-0 ${i > 0 ? `border-t ${rule} sm:border-t-0 sm:border-s` : ''}`
+              : `flex gap-6 py-6 ${i > 0 ? `border-t ${rule}` : ''}`
+          }
+        >
+          <LineIcon className={`mt-1 h-7 w-7 shrink-0 ${dark ? 'text-[var(--iti-champagne)]' : 'text-[var(--iti-copper)]'}`}>{d.icon}</LineIcon>
+          <div className="min-w-0">
+            <dt className={`text-[0.68rem] font-bold tracking-[0.2em] uppercase rtl:text-[0.78rem] rtl:tracking-normal ${dark ? 'text-white/60' : 'text-[var(--iti-navy)]'}`}>{d.k}</dt>
+            <dd className={`mt-1.5 text-[1rem] leading-snug font-semibold ${ink}`}>{d.v}</dd>
+          </div>
+        </div>
+      ))}
+    </dl>
+  )
+}
+
+/** the same soft paper sheets as the values section, so the page closes in its own material */
+function ContactSheets() {
+  return (
+    <svg className="pointer-events-none absolute inset-0 -z-10 h-full w-full rtl:-scale-x-100" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden>
+      <defs>
+        <linearGradient id="ct-sheet" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#ffffff" stopOpacity="0.7" />
+          <stop offset="1" stopColor="#ffffff" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d="M1180 0C1300 60 1450 90 1600 88V0Z" fill="url(#ct-sheet)" />
+      <path d="M0 640C220 700 380 800 470 900H0Z" fill="url(#ct-sheet)" />
+      <path d="M0 700C200 760 340 840 410 900" fill="none" stroke="#fff" strokeOpacity="0.9" />
+    </svg>
+  )
+}
+
+function ContactIntro({ lang, center = false, dark = false }: { lang: Lang; center?: boolean; dark?: boolean }) {
+  const t = COPY.contact
+  return (
+    <>
+      <Reveal>
+        <p className={`iti-eyebrow ${dark ? 'iti-eyebrow-light' : ''} ${center ? 'justify-center' : ''}`}>{t.eyebrow[lang]}</p>
+      </Reveal>
+      <SplitReveal text={t.title[lang]} emphasis={emph(lang, 1, 1)} className={`iti-h2 iti-contact-title mt-6 ${center ? 'text-center' : ''}`} />
+      <Reveal delay={0.1}>
+        <p className={`mt-7 max-w-[44ch] text-[1.05rem] leading-[1.75] ${dark ? 'text-white/70' : 'text-[var(--iti-ink-soft)]'} ${center ? 'mx-auto text-center' : ''}`}>{t.body[lang]}</p>
+      </Reveal>
+    </>
+  )
+}
+
+/* ---------- Version 1 — copy and direct lines; the four routes on a navy card; the form in a drawer ---------- */
+function ContactRoutes({ lang }: { lang: Lang }) {
+  const q = useInquiry()
   return (
     <section id="contact" className="iti-contact relative isolate overflow-hidden py-24 sm:py-32">
-      {/* the same soft paper sheets as the values section, so the page closes in its own material */}
-      <svg className="pointer-events-none absolute inset-0 -z-10 h-full w-full rtl:-scale-x-100" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden>
-        <defs>
-          <linearGradient id="ct-sheet" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor="#ffffff" stopOpacity="0.7" />
-            <stop offset="1" stopColor="#ffffff" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        <path d="M1180 0C1300 60 1450 90 1600 88V0Z" fill="url(#ct-sheet)" />
-        <path d="M0 640C220 700 380 800 470 900H0Z" fill="url(#ct-sheet)" />
-        <path d="M0 700C200 760 340 840 410 900" fill="none" stroke="#fff" strokeOpacity="0.9" />
-      </svg>
-
+      <ContactSheets />
       <div className="mx-auto grid max-w-[1400px] gap-14 px-5 sm:px-8 lg:grid-cols-12 lg:gap-12">
         <div className="lg:col-span-5 xl:col-span-4">
-          <Reveal>
-            <p className="iti-eyebrow">{t.eyebrow[lang]}</p>
-          </Reveal>
-          <SplitReveal text={t.title[lang]} emphasis={emph(lang, 1, 1)} className="iti-h2 iti-contact-title mt-6" />
-          <Reveal delay={0.1}>
-            <p className="mt-7 max-w-[40ch] text-[1.05rem] leading-[1.75] text-[var(--iti-ink-soft)]">{t.body[lang]}</p>
-          </Reveal>
+          <ContactIntro lang={lang} />
           <Reveal delay={0.15}>
-            <dl className="mt-10">
-              {direct.map((d, i) => (
-                <div key={d.k} className={`flex gap-6 py-6 ${i > 0 ? 'border-t border-[var(--iti-line)]' : ''}`}>
-                  <LineIcon className="mt-1 h-7 w-7 shrink-0 text-[var(--iti-copper)]">{d.icon}</LineIcon>
-                  <div className="min-w-0">
-                    <dt className="text-[0.68rem] font-bold tracking-[0.2em] text-[var(--iti-navy)] uppercase rtl:text-[0.78rem] rtl:tracking-normal">{d.k}</dt>
-                    <dd className="mt-1.5 text-[1rem] leading-snug font-semibold text-[var(--iti-navy)]">{d.v}</dd>
-                  </div>
-                </div>
-              ))}
-            </dl>
+            <div className="mt-10">
+              <DirectLines lang={lang} />
+            </div>
           </Reveal>
         </div>
-
         <Reveal delay={0.1} className="lg:col-span-7 xl:col-span-8 xl:ps-10">
-          <div className="iti-form-card">
-            <InquiryForm lang={lang} />
+          <InquiryLaunch lang={lang} onOpen={q.openForm} />
+        </Reveal>
+      </div>
+      <InquiryDrawer lang={lang} open={q.open} preset={q.preset} onClose={q.close} />
+    </section>
+  )
+}
+
+/* ---------- Version 2 — one centred statement, one button; topics as small shortcuts; the form in a drawer ---------- */
+function ContactStatement({ lang }: { lang: Lang }) {
+  const f = CONTACT_FORM
+  const rtl = lang === 'ar'
+  const q = useInquiry()
+  return (
+    <section id="contact" className="iti-contact relative isolate overflow-hidden py-24 sm:py-32">
+      <ContactSheets />
+      <div className="mx-auto max-w-[1100px] px-5 text-center sm:px-8">
+        <ContactIntro lang={lang} center />
+        <Reveal delay={0.15}>
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
+            <Magnetic>
+              <button type="button" onClick={() => q.openForm(null)} className="iti-btn iti-btn-navy group" aria-haspopup="dialog">
+                {f.launchCta[lang]}
+                <Arrow rtl={rtl} />
+              </button>
+            </Magnetic>
+            <a href={`mailto:${CONTACT.email}`} className="iti-btn iti-btn-outline">
+              {f.emailDirect[lang]}
+            </a>
+          </div>
+          <p className="mx-auto mt-5 max-w-[52ch] text-[0.8rem] leading-relaxed text-[var(--iti-ink-soft)]">{f.launchNote[lang]}</p>
+          <div className="mt-10">
+            <p className="text-[0.7rem] font-bold tracking-[0.2em] text-[var(--iti-navy)] uppercase rtl:text-[0.8rem] rtl:tracking-normal">{f.routesLead[lang]}</p>
+            <div className="mt-4 flex flex-wrap justify-center gap-2.5">
+              {INQUIRIES.map((it) => (
+                <button key={it.id} type="button" onClick={() => q.openForm(it.id)} className="iti-topic" aria-haspopup="dialog">
+                  <LineIcon className="h-5 w-5 shrink-0 text-[var(--iti-copper)]">{INQUIRY_ICONS[it.id]}</LineIcon>
+                  {it.title[lang]}
+                </button>
+              ))}
+            </div>
+          </div>
+        </Reveal>
+      </div>
+      <Reveal delay={0.2} className="mx-auto mt-20 max-w-[1400px] px-5 text-start sm:px-8">
+        <DirectLines lang={lang} layout="row" />
+      </Reveal>
+      <InquiryDrawer lang={lang} open={q.open} preset={q.preset} onClose={q.close} />
+    </section>
+  )
+}
+
+/* ---------- Version 3 — the form folds out in place, inside the card, when asked for ---------- */
+function ContactInline({ lang }: { lang: Lang }) {
+  const f = CONTACT_FORM
+  const rtl = lang === 'ar'
+  const reduce = !!useReducedMotion()
+  const [open, setOpen] = useState(false)
+  const [preset, setPreset] = useState<{ id: InquiryId | null; n: number }>({ id: null, n: 0 })
+  const card = useRef<HTMLDivElement | null>(null)
+  const opener = useRef<HTMLButtonElement | null>(null)
+
+  const unfold = (id: InquiryId | null) => {
+    setPreset((p) => ({ id, n: p.n + 1 }))
+    setOpen(true)
+  }
+  // once the form has folded out: bring the card up and land on the first thing to answer
+  const landed = () => {
+    if (!open) return
+    card.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' })
+    const target = preset.id ? card.current?.querySelector<HTMLElement>('#cf-name') : card.current?.querySelector<HTMLElement>('input[name="topic"]')
+    target?.focus({ preventScroll: true })
+  }
+  const fold = () => {
+    setOpen(false)
+    window.setTimeout(() => opener.current?.focus(), 50)
+  }
+
+  return (
+    <section id="contact" className="iti-contact relative isolate overflow-hidden py-24 sm:py-32">
+      <ContactSheets />
+      <div className="mx-auto grid max-w-[1400px] gap-14 px-5 sm:px-8 lg:grid-cols-12 lg:gap-12">
+        <div className="lg:col-span-5 xl:col-span-4">
+          <ContactIntro lang={lang} />
+          <Reveal delay={0.15}>
+            <div className="mt-10">
+              <DirectLines lang={lang} />
+            </div>
+          </Reveal>
+        </div>
+        <Reveal delay={0.1} className="lg:col-span-7 xl:col-span-8 xl:ps-10">
+          <div ref={card} className="iti-form-card scroll-mt-28">
+            <div className="flex items-start justify-between gap-6">
+              <div>
+                <p className="iti-eyebrow">{f.launchEyebrow[lang]}</p>
+                <h3 className="mt-4 max-w-[24ch] font-[family-name:var(--iti-head)] text-[clamp(1.4rem,2.2vw,1.85rem)] leading-tight font-extrabold text-[var(--iti-navy)]">
+                  {open ? f.drawerTitle[lang] : f.launchTitle[lang]}
+                </h3>
+              </div>
+              {open && <CloseButton label={f.closeForm[lang]} onClick={fold} />}
+            </div>
+
+            <AnimatePresence initial={false} mode="wait">
+              {open ? (
+                <motion.div
+                  key="form"
+                  id="cf-inline"
+                  className="overflow-hidden"
+                  initial={reduce ? { opacity: 0 } : { height: 0, opacity: 0 }}
+                  animate={reduce ? { opacity: 1 } : { height: 'auto', opacity: 1 }}
+                  exit={reduce ? { opacity: 0 } : { height: 0, opacity: 0 }}
+                  transition={{ duration: reduce ? 0.15 : 0.5, ease: EASE_OUT }}
+                  onAnimationComplete={landed}
+                >
+                  <div className="mt-8 border-t border-[var(--iti-line)] pt-8">
+                    <InquiryForm lang={lang} preset={preset} />
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="closed"
+                  initial={reduce ? false : { opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <div className="mt-7 grid gap-3 sm:grid-cols-2">
+                    {INQUIRIES.map((it) => (
+                      <button key={it.id} type="button" onClick={() => unfold(it.id)} className="iti-route-tile group" aria-expanded={false} aria-controls="cf-inline">
+                        <LineIcon className="h-7 w-7 shrink-0 text-[var(--iti-copper)]">{INQUIRY_ICONS[it.id]}</LineIcon>
+                        <span className="min-w-0 flex-1 text-start">
+                          <span className="block font-[family-name:var(--iti-head)] text-[0.98rem] leading-snug font-bold text-[var(--iti-navy)]">{it.title[lang]}</span>
+                          <span className="mt-1 block text-[0.82rem] leading-snug text-[var(--iti-ink-soft)]">{it.blurb[lang]}</span>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
+                    <button
+                      ref={opener}
+                      type="button"
+                      onClick={() => unfold(null)}
+                      className="iti-btn iti-btn-navy group shrink-0 self-start"
+                      aria-expanded={false}
+                      aria-controls="cf-inline"
+                    >
+                      {f.launchCta[lang]}
+                      <Arrow rtl={rtl} />
+                    </button>
+                    <p className="max-w-[44ch] text-[0.78rem] leading-relaxed text-[var(--iti-ink-soft)]">{f.launchNote[lang]}</p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </Reveal>
       </div>
     </section>
   )
+}
+
+/* ---------- Version 4 — a navy band that carries on from the map; routes as tiles; the form in a centred modal ---------- */
+function ContactNight({ lang }: { lang: Lang }) {
+  const f = CONTACT_FORM
+  const rtl = lang === 'ar'
+  const q = useInquiry()
+  return (
+    <section id="contact" className="iti-contact-night relative isolate overflow-hidden py-24 text-white sm:py-32">
+      <div className="mx-auto max-w-[1400px] px-5 sm:px-8">
+        <div className="grid gap-14 lg:grid-cols-12 lg:gap-12">
+          <div className="lg:col-span-5">
+            <ContactIntro lang={lang} dark />
+            <Reveal delay={0.15}>
+              <div className="mt-10 flex flex-wrap items-center gap-4">
+                <Magnetic>
+                  <button type="button" onClick={() => q.openForm(null)} className="iti-btn iti-btn-copper group" aria-haspopup="dialog">
+                    {f.launchCta[lang]}
+                    <Arrow rtl={rtl} />
+                  </button>
+                </Magnetic>
+                <a href={`mailto:${CONTACT.email}`} className="iti-btn iti-btn-ghost">
+                  {f.emailDirect[lang]}
+                </a>
+              </div>
+              <p className="mt-5 max-w-[44ch] text-[0.78rem] leading-relaxed text-white/55">{f.launchNote[lang]}</p>
+            </Reveal>
+          </div>
+          <Reveal delay={0.1} className="lg:col-span-7 xl:ps-10">
+            <p className="iti-eyebrow iti-eyebrow-light">{f.launchTitle[lang]}</p>
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              {INQUIRIES.map((it) => (
+                <button key={it.id} type="button" onClick={() => q.openForm(it.id)} className="iti-night-tile group" aria-haspopup="dialog">
+                  <span className="flex items-start justify-between gap-4">
+                    <LineIcon className="h-9 w-9 shrink-0 text-[var(--iti-champagne)]">{INQUIRY_ICONS[it.id]}</LineIcon>
+                    <span className="iti-route-arrow" aria-hidden>
+                      <Arrow rtl={rtl} />
+                    </span>
+                  </span>
+                  <span className="mt-8 block text-start font-[family-name:var(--iti-head)] text-[1.08rem] leading-snug font-bold">{it.title[lang]}</span>
+                  <span className="mt-1.5 block text-start text-[0.86rem] leading-snug text-white/60">{it.blurb[lang]}</span>
+                </button>
+              ))}
+            </div>
+          </Reveal>
+        </div>
+        <Reveal delay={0.2} className="mt-20">
+          <DirectLines lang={lang} layout="row" tone="dark" />
+        </Reveal>
+      </div>
+      <InquiryDrawer lang={lang} open={q.open} preset={q.preset} onClose={q.close} mode="modal" />
+    </section>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/* Contact, second round — versions 5 to 8. The client's brief: the    */
+/* form is not the subject of the section. One clear call to action;   */
+/* the form opens in a modal only when it is asked for. Four layouts,  */
+/* four buttons, four ways for the modal to arrive.                    */
+/* ------------------------------------------------------------------ */
+
+/** the middle of whatever was pressed, in viewport pixels — where the iris opens from */
+const centreOf = (el: Element): Origin => {
+  const r = el.getBoundingClientRect()
+  return { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+}
+
+/** the quiet alternative under the button: write to us directly */
+function MailLine({ lang, dark = false, className = '' }: { lang: Lang; dark?: boolean; className?: string }) {
+  return (
+    <p className={`iti-cta-mail ${dark ? 'is-dark' : ''} ${className}`}>
+      <span>{CONTACT_FORM.emailDirect[lang]}</span>
+      <a href={`mailto:${CONTACT.email}`} className="iti-link-underline" dir="ltr">
+        {CONTACT.email}
+      </a>
+    </p>
+  )
+}
+
+/* ---------- Version 5 — Invitation: open Mist, the statement, one pill. The modal rises into the middle ---------- */
+function ContactInvitation({ lang }: { lang: Lang }) {
+  const f = CONTACT_FORM
+  const rtl = lang === 'ar'
+  const q = useInquiry()
+  return (
+    <section id="contact" className="iti-contact relative isolate overflow-hidden py-28 sm:py-40">
+      <ContactSheets />
+      <div className="mx-auto max-w-[900px] px-5 text-center sm:px-8">
+        <ContactIntro lang={lang} center />
+        <Reveal delay={0.18}>
+          <div className="mt-12 flex justify-center">
+            <span className="iti-cta-halo">
+              <Magnetic strength={0.2}>
+                <button type="button" onClick={() => q.openForm(null)} className="iti-cta-pill" aria-haspopup="dialog">
+                  <span>{f.launchCta[lang]}</span>
+                  <span className="iti-cta-pill-dot" aria-hidden>
+                    <Arrow rtl={rtl} />
+                  </span>
+                </button>
+              </Magnetic>
+            </span>
+          </div>
+          <MailLine lang={lang} className="mt-10 justify-center" />
+        </Reveal>
+      </div>
+      <InquiryDrawer lang={lang} open={q.open} preset={q.preset} onClose={q.close} mode="modal" />
+    </section>
+  )
+}
+
+/* ---------- Version 6 — Orbit: the night carried on from the map; a round button with a light circling it. The modal opens out of the button ---------- */
+function ContactOrbit({ lang }: { lang: Lang }) {
+  const f = CONTACT_FORM
+  const rtl = lang === 'ar'
+  const q = useInquiry()
+  const [origin, setOrigin] = useState<Origin | null>(null)
+  return (
+    <section id="contact" className="iti-contact-night relative isolate overflow-hidden py-28 text-white sm:py-40">
+      <div className="mx-auto grid max-w-[1400px] items-center gap-x-12 gap-y-24 px-5 sm:px-8 lg:grid-cols-12">
+        <div className="lg:col-span-7">
+          <ContactIntro lang={lang} dark />
+          <Reveal delay={0.2}>
+            <MailLine lang={lang} dark className="mt-10" />
+          </Reveal>
+        </div>
+        <Reveal delay={0.15} className="flex justify-center pb-10 lg:col-span-5 lg:justify-end lg:pe-20 lg:pb-0">
+          <Magnetic strength={0.16}>
+            <button
+              type="button"
+              className="iti-cta-orb"
+              aria-haspopup="dialog"
+              onClick={(e) => {
+                setOrigin(centreOf(e.currentTarget))
+                q.openForm(null)
+              }}
+            >
+              <span className="iti-cta-orbit" aria-hidden />
+              <span className="iti-cta-orbit iti-cta-orbit-far" aria-hidden />
+              <span className="max-w-[9ch]">{f.launchCta[lang]}</span>
+              <span className="iti-cta-orb-arrow" aria-hidden>
+                <Arrow rtl={rtl} />
+              </span>
+            </button>
+          </Magnetic>
+        </Reveal>
+      </div>
+      <InquiryDrawer lang={lang} open={q.open} preset={q.preset} onClose={q.close} mode="modal" enter="iris" origin={origin} />
+    </section>
+  )
+}
+
+/* ---------- Version 7 — Headline: white paper; the sentence is the button. The modal rises as a sheet from the foot of the screen ---------- */
+function ContactHeadline({ lang }: { lang: Lang }) {
+  const f = CONTACT_FORM
+  const t = COPY.contact
+  const rtl = lang === 'ar'
+  const q = useInquiry()
+  return (
+    <section id="contact" className="iti-cta-line relative overflow-hidden py-24 sm:py-32">
+      <div className="mx-auto max-w-[1400px] px-5 sm:px-8">
+        <div className="flex flex-wrap items-end justify-between gap-x-12 gap-y-5">
+          <Reveal>
+            <p className="iti-eyebrow">{t.eyebrow[lang]}</p>
+          </Reveal>
+          <Reveal delay={0.08}>
+            <p className="max-w-[46ch] text-[1rem] leading-[1.7] text-[var(--iti-ink-soft)]">{t.body[lang]}</p>
+          </Reveal>
+        </div>
+        <Reveal delay={0.12}>
+          <button type="button" className="iti-cta-headline mt-8 sm:mt-10" onClick={() => q.openForm(null)} aria-haspopup="dialog">
+            <span className="iti-cta-headline-text">
+              {t.title[lang].split('\n').map((line) => (
+                <span key={line} className="block">
+                  {line}
+                </span>
+              ))}
+            </span>
+            <span className="iti-cta-go">
+              <span>{f.launchCta[lang]}</span>
+              <span className="iti-cta-go-chip" aria-hidden>
+                <Arrow rtl={rtl} />
+              </span>
+            </span>
+          </button>
+        </Reveal>
+        <Reveal delay={0.2}>
+          <DirectLines lang={lang} layout="row" />
+        </Reveal>
+      </div>
+      <InquiryDrawer lang={lang} open={q.open} preset={q.preset} onClose={q.close} mode="modal" enter="sheet" />
+    </section>
+  )
+}
+
+/* ---------- Version 8 — Plate: the Group's navy plate on Mist, and one copper tile to press. The modal opens like a curtain ---------- */
+function ContactPlate({ lang }: { lang: Lang }) {
+  const f = CONTACT_FORM
+  const rtl = lang === 'ar'
+  const q = useInquiry()
+  return (
+    <section id="contact" className="iti-contact relative isolate overflow-hidden py-24 sm:py-32">
+      <ContactSheets />
+      <div className="mx-auto max-w-[1400px] px-5 sm:px-8">
+        <Reveal>
+          <div className="iti-cta-plate iti-on-night">
+            <div>
+              <ContactIntro lang={lang} dark />
+              <MailLine lang={lang} dark className="mt-10" />
+            </div>
+            <button type="button" className="iti-cta-tile" onClick={() => q.openForm(null)} aria-haspopup="dialog">
+              <span className="flex items-start justify-between gap-4">
+                <span className="iti-cta-tile-kicker">{f.launchEyebrow[lang]}</span>
+                <span className="iti-cta-tile-arrow" aria-hidden>
+                  <Arrow rtl={rtl} />
+                </span>
+              </span>
+              <span className="iti-cta-tile-label">{f.launchCta[lang]}</span>
+            </button>
+          </div>
+        </Reveal>
+      </div>
+      <InquiryDrawer lang={lang} open={q.open} preset={q.preset} onClose={q.close} mode="modal" enter="curtain" />
+    </section>
+  )
+}
+
+/** Contact — the version comes from the address (?contact=1…8); 1 is the current design.
+ *  5–8 follow the client's brief: one call to action, the form in a modal */
+export function ItiContact({ lang }: { lang: Lang }) {
+  const v = useVariant('contact')
+  if (v === 2) return <ContactStatement lang={lang} />
+  if (v === 3) return <ContactInline lang={lang} />
+  if (v === 4) return <ContactNight lang={lang} />
+  if (v === 5) return <ContactInvitation lang={lang} />
+  if (v === 6) return <ContactOrbit lang={lang} />
+  if (v === 7) return <ContactHeadline lang={lang} />
+  if (v === 8) return <ContactPlate lang={lang} />
+  return <ContactRoutes lang={lang} />
 }
 
 export function ItiFooter({ lang }: { lang: Lang }) {

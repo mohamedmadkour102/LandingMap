@@ -48,6 +48,20 @@ const PHOTOS = {
   // Market thumbnails / focused-country fills
   'market-usa': `${PACK}/Sesco Cement/Sesco Pics/Houston/20260225_212906000_iOS.jpg`,
 
+  // Vision & Mission, version 13 — stock plates from Pexels (free licence), not Group sites. Three per statement:
+  //   purpose-mission:   "Industrial Structures at a Cement Factory" by Robert So, pexels.com/photo/18468425
+  //   purpose-mission-2: "Industrial Production Plant" by mohamed Zekry, pexels.com/photo/10546018
+  //   purpose-mission-3: "Industrial Metal Silos Against Blue Sky" by Muharrem Alper, pexels.com/photo/33520444
+  //   purpose-vision:    "Industrial Cement Plant Illuminated at Night" by Joseph Russo, pexels.com/photo/29590119
+  //   purpose-vision-2:  "Illuminated Industrial Structure at Night" by Andreas Zu, pexels.com/photo/34486235
+  //   purpose-vision-3:  illuminated plant with cranes at night, by Hiếu Hoàng, pexels.com/photo/697279
+  'purpose-mission': `${LEGACY}/purpose-mission.jpg`,
+  'purpose-mission-2': `${LEGACY}/purpose-mission-2.jpg`,
+  'purpose-mission-3': `${LEGACY}/purpose-mission-3.jpg`,
+  'purpose-vision': `${LEGACY}/purpose-vision.jpg`,
+  'purpose-vision-2': `${LEGACY}/purpose-vision-2.jpg`,
+  'purpose-vision-3': `${LEGACY}/purpose-vision-3.jpg`,
+
   // Still illustrative — no client photography supplied yet
   cimpor: `${LEGACY}/hero.jpg`,
   ventura: `${LEGACY}/ventura.jpg`,

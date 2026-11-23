@@ -101,6 +101,8 @@ function fitView(center: LatLng, pts: LatLng[], extent: [[number, number], [numb
 }
 
 const GLOBE_R = H / 2 - 46
+/** Height of the page's bar once it has gone solid (ItiNav) — the map parks just under it on phones */
+const NAV_H = 68
 
 /** The whole globe, turned to the Atlantic so the U.S. Gulf Coast and the Arabian Gulf are both in view */
 const HOME: View = { lat: 24, lng: -18, s: GLOBE_R, tx: W / 2, ty: H / 2 }
@@ -122,7 +124,7 @@ const frameView = (m: Market, reserveCard: boolean) =>
     [W - (reserveCard ? CARD_SPACE : FRAME_PAD), H - FRAME_PAD],
   ])
 
-/** Desktop frames leave room for the side card; on mobile the card is a bottom sheet */
+/** Desktop frames leave room for the side card; on phones the card sits under the map, so the frame has the whole box */
 const FRAMES_WIDE = Object.fromEntries(MARKETS.map((m) => [m.id, frameView(m, true)])) as Record<MarketId, View>
 const FRAMES_NARROW = Object.fromEntries(MARKETS.map((m) => [m.id, frameView(m, false)])) as Record<MarketId, View>
 
@@ -325,18 +327,23 @@ export default function ItiFootprint({ lang }: Props) {
   const dragMoved = useRef(false)
   const [focus, setFocus] = useState<MarketId | null>(null)
   const [hovered, setHovered] = useState<MarketId | null>(null)
-  const [hoveredAssetId, setHoveredAssetId] = useState<string | null>(null)
+  const [hoveredAssetId, setHoveredAssetIdRaw] = useState<string | null>(null)
   const [hqHover, setHqHover] = useState(false)
   const [selected, setSelected] = useState<Asset | null>(null)
   const [overview, setOverview] = useState<MarketId | null>(null)
   const [sector, setSector] = useState<SectorId | null>(null)
   const [inView, setInView] = useState(false)
   const touch = useMemo(() => typeof window !== 'undefined' && window.matchMedia('(hover: none)').matches, [])
+  /** On a touch screen a tap fires the mouse and focus events too, and nothing ever "leaves" — so sites are never hovered there */
+  const setHoveredAssetId = useCallback((id: string | null) => setHoveredAssetIdRaw(touch ? null : id), [touch])
   const [wide, setWide] = useState(() => typeof window === 'undefined' || window.matchMedia('(min-width: 768px)').matches)
+  /** the three-column desktop layout; below it the map sits in the page's flow */
+  const [desk, setDesk] = useState(() => typeof window === 'undefined' || window.matchMedia('(min-width: 1024px)').matches)
   /** Marker scale: the map shrinks on small screens, pins and labels must not */
   const [k, setK] = useState(1)
   const [boxW, setBoxW] = useState(0)
   const mapBoxRef = useRef<HTMLDivElement | null>(null)
+  const tabsRef = useRef<HTMLDivElement | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const earthRef = useRef<EarthRenderer | null>(null)
   const [glFailed, setGlFailed] = useState(false)
@@ -381,6 +388,20 @@ export default function ItiFootprint({ lang }: Props) {
     [commit, reduceMotion],
   )
 
+  /**
+   * Below the desktop layout the map sits in the page's flow, with its details underneath.
+   * Whenever it changes what it shows, it is brought back to the top of the screen, just under the bar.
+   */
+  const scrollToStage = useCallback(() => {
+    if (window.matchMedia('(min-width: 1024px)').matches) return
+    // the map's own box may be stuck to the top; its column still knows where it belongs
+    const col = mapBoxRef.current?.parentElement
+    if (!col) return
+    const top = Math.round(col.getBoundingClientRect().top + window.scrollY - NAV_H)
+    if (Math.abs(top - window.scrollY) < 4) return
+    window.scrollTo({ top, behavior: reduceMotion ? 'auto' : 'smooth' })
+  }, [reduceMotion])
+
   const startReveal = useCallback(() => {
     introStarted.current = true
     if (revealStart.current == null) revealStart.current = performance.now()
@@ -395,12 +416,13 @@ export default function ItiFootprint({ lang }: Props) {
       setFocus(id)
       setHovered(null)
       setHoveredAssetId(null)
+      scrollToStage()
       flyTo(FRAMES[id], () => {
         if (m.depth === 'overview') setOverview(id)
         then?.()
       })
     },
-    [flyTo, FRAMES, startReveal],
+    [flyTo, FRAMES, startReveal, scrollToStage, setHoveredAssetId],
   )
 
   const backToMap = useCallback(() => {
@@ -408,8 +430,9 @@ export default function ItiFootprint({ lang }: Props) {
     setOverview(null)
     setFocus(null)
     setHoveredAssetId(null)
+    scrollToStage()
     flyTo(HOME)
-  }, [flyTo])
+  }, [flyTo, scrollToStage, setHoveredAssetId])
 
   useEffect(
     () => () => {
@@ -486,9 +509,17 @@ export default function ItiFootprint({ lang }: Props) {
 
   useEffect(() => {
     const mq = window.matchMedia('(min-width: 768px)')
-    const onChange = () => setWide(mq.matches)
+    const lg = window.matchMedia('(min-width: 1024px)')
+    const onChange = () => {
+      setWide(mq.matches)
+      setDesk(lg.matches)
+    }
     mq.addEventListener('change', onChange)
-    return () => mq.removeEventListener('change', onChange)
+    lg.addEventListener('change', onChange)
+    return () => {
+      mq.removeEventListener('change', onChange)
+      lg.removeEventListener('change', onChange)
+    }
   }, [])
 
   useEffect(() => {
@@ -504,6 +535,16 @@ export default function ItiFootprint({ lang }: Props) {
     ro.observe(el)
     return () => ro.disconnect()
   }, [])
+
+  // The open market's tab is kept in sight in its strip (moved by hand: scrollIntoView would cut the page's own scroll short)
+  useEffect(() => {
+    const strip = tabsRef.current
+    const tab = strip?.querySelector<HTMLElement>('[aria-selected="true"]')
+    if (!strip || !tab) return
+    const s = strip.getBoundingClientRect()
+    const b = tab.getBoundingClientRect()
+    strip.scrollBy({ left: b.left - s.left - (s.width - b.width) / 2, behavior: reduceMotion ? 'auto' : 'smooth' })
+  }, [focus, reduceMotion])
 
   // Re-frame an open market when crossing the mobile/desktop breakpoint
   useEffect(() => {
@@ -780,6 +821,7 @@ export default function ItiFootprint({ lang }: Props) {
   }
 
   function openAsset(a: Asset) {
+    if (selected?.id !== a.id) scrollToStage()
     setSelected((cur) => (cur?.id === a.id ? null : a))
   }
 
@@ -894,11 +936,99 @@ export default function ItiFootprint({ lang }: Props) {
   }
 
   const selectedSiblings = selected ? ASSETS.filter((a) => a.market === selected.market) : []
+  /** Below the desktop layout the map is a window while it is zoomed (or still flying): it never spills over the text around it */
+  const framed = !desk && (focus != null || view.s > GLOBE_R * 1.04)
+
+  /** The open market in words: its figure, what it is, and (for a market with pins) its sites as a list */
+  const marketBrief = (m: Market, docked: boolean) => {
+    const sites = ASSETS.filter((a) => a.market === m.id && (sector == null || a.sector === sector))
+    return (
+      <>
+        <div className={docked ? 'flex items-end justify-between gap-4' : undefined}>
+          <div>
+            <p className="text-[0.7rem] font-semibold tracking-[0.18em] uppercase text-[var(--iti-copper-soft)]">{m.name[lang]}</p>
+            <p className={`mt-2 font-[family-name:var(--iti-head)] font-extrabold tracking-tight tabular-nums ${docked ? 'text-[2rem] leading-none' : 'text-4xl'}`} dir="ltr">
+              <MoneyCount value={m.investment} />
+            </p>
+          </div>
+          <p className={`text-xs tracking-wide text-[var(--iti-fp-soft)] ${docked ? 'pb-0.5 text-end' : ''}`}>{t.investment[lang]}</p>
+        </div>
+        <p className="mt-4 text-sm font-semibold leading-snug">{m.headline[lang]}</p>
+        <p className="mt-2 text-sm leading-relaxed text-[var(--iti-fp-soft)]">{m.summary[lang]}</p>
+        {m.points && (m.depth === 'plants' || docked) && (
+          <ul className="mt-3 space-y-1.5">
+            {m.points.map((p) => (
+              <li key={p.en} className="flex gap-2 text-[0.76rem] leading-snug text-[var(--iti-fp-soft)]">
+                <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-[var(--iti-copper-soft)]" aria-hidden />
+                {p[lang]}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {m.depth === 'plants' && (
+          <div className="mt-6">
+            <p className="iti-panel-label mb-2">
+              {t.sitesList[lang]}
+              <span className="iti-panel-count" dir="ltr">
+                {sites.length}
+              </span>
+            </p>
+            <ul className="divide-y divide-white/10 border-y border-white/10">
+              {sites.map((a) => {
+                const on = selected?.id === a.id
+                return (
+                  <li key={a.id}>
+                    <button
+                      type="button"
+                      onClick={() => openAsset(a)}
+                      onMouseEnter={() => setHoveredAssetId(a.id)}
+                      onMouseLeave={() => setHoveredAssetId(null)}
+                      onFocus={() => setHoveredAssetId(a.id)}
+                      onBlur={() => setHoveredAssetId(null)}
+                      aria-pressed={on}
+                      className={`group flex w-full items-center gap-3 text-start transition ${docked ? 'py-3.5' : 'py-2.5'} ${
+                        on ? 'text-white' : 'text-[var(--iti-fp-soft)] hover:text-white'
+                      }`}
+                    >
+                      <span
+                        className={`h-3 w-3 shrink-0 rounded-full ring-2 ring-white/80 ${
+                          a.status === 'construction' ? 'outline-1 outline-offset-2 outline-dashed outline-white/70' : ''
+                        }`}
+                        style={{ background: SECTORS[a.sector].color }}
+                        aria-hidden
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className={`block truncate font-semibold text-white ${docked ? 'text-[0.92rem]' : 'text-[0.82rem]'}`}>
+                          {a.name}
+                          {a.parent && a.market !== 'egypt' ? ` · ${a.parent}` : ''}
+                        </span>
+                        <span className={`block ${docked ? 'text-xs' : 'text-[0.7rem]'}`}>{a.city[lang]}</span>
+                      </span>
+                      <span
+                        aria-hidden
+                        className={`text-xs text-[var(--iti-copper-soft)] transition ${
+                          on || docked ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                        } ${rtl ? 'rotate-180' : ''}`}
+                      >
+                        →
+                      </span>
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+            {!docked && <p className="mt-3 text-xs font-medium text-[var(--iti-copper-soft)]">{t.hintPlants[lang]}</p>}
+          </div>
+        )}
+      </>
+    )
+  }
 
   /* ---------------- render ---------------- */
 
   return (
-    <section ref={sectionRef} className="iti-footprint relative overflow-hidden text-white" aria-labelledby={`${uid}-title`}>
+    <section ref={sectionRef} className="iti-footprint relative text-white" aria-labelledby={`${uid}-title`}>
       <div className="iti-footprint-bg" aria-hidden />
       <div className="relative mx-auto grid max-w-[1600px] lg:h-[100svh] lg:min-h-[640px] lg:grid-cols-12">
         {/* ---------- LEFT: narrative ---------- */}
@@ -909,7 +1039,8 @@ export default function ItiFootprint({ lang }: Props) {
           </h2>
           <p className="mt-5 max-w-sm text-[0.95rem] leading-relaxed text-[var(--iti-fp-soft)]">{t.body[lang]}</p>
 
-          <div className="mt-8 lg:mt-10 lg:min-h-[220px]">
+          {/* desktop: the open market is told here, beside the globe */}
+          <div className="mt-10 hidden min-h-[220px] lg:block">
             <AnimatePresence mode="wait">
               {focusMarketObj ? (
                 <motion.div
@@ -920,87 +1051,7 @@ export default function ItiFootprint({ lang }: Props) {
                   transition={{ duration: 0.35 }}
                   className="border-t-2 border-[var(--iti-copper)] pt-5"
                 >
-                  <p className="text-[0.7rem] font-semibold tracking-[0.18em] uppercase text-[var(--iti-copper-soft)]">
-                    {focusMarketObj.name[lang]}
-                  </p>
-                  <p className="mt-2 font-[family-name:var(--iti-head)] text-4xl font-extrabold tracking-tight tabular-nums" dir="ltr">
-                    <MoneyCount value={focusMarketObj.investment} />
-                  </p>
-                  <p className="text-xs tracking-wide text-[var(--iti-fp-soft)]">{t.investment[lang]}</p>
-                  <p className="mt-4 text-sm font-semibold leading-snug">{focusMarketObj.headline[lang]}</p>
-                  <p className="mt-2 text-sm leading-relaxed text-[var(--iti-fp-soft)]">{focusMarketObj.summary[lang]}</p>
-                  {focusMarketObj.depth === 'plants' && focusMarketObj.points && (
-                    <ul className="mt-3 space-y-1.5">
-                      {focusMarketObj.points.map((p) => (
-                        <li key={p.en} className="flex gap-2 text-[0.76rem] leading-snug text-[var(--iti-fp-soft)]">
-                          <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-[var(--iti-copper-soft)]" aria-hidden />
-                          {p[lang]}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-
-                  {focusMarketObj.depth === 'plants' && (
-                    <div className="mt-6 hidden lg:block">
-                      <p className="iti-panel-label mb-2">
-                        {t.sitesList[lang]}
-                        <span className="iti-panel-count" dir="ltr">
-                          {
-                            ASSETS.filter(
-                              (a) => a.market === focusMarketObj.id && (sector == null || a.sector === sector),
-                            ).length
-                          }
-                        </span>
-                      </p>
-                      <ul className="divide-y divide-white/10 border-y border-white/10">
-                        {ASSETS.filter(
-                          (a) => a.market === focusMarketObj.id && (sector == null || a.sector === sector),
-                        ).map((a) => {
-                          const on = selected?.id === a.id
-                          return (
-                            <li key={a.id}>
-                              <button
-                                type="button"
-                                onClick={() => openAsset(a)}
-                                onMouseEnter={() => setHoveredAssetId(a.id)}
-                                onMouseLeave={() => setHoveredAssetId(null)}
-                                onFocus={() => setHoveredAssetId(a.id)}
-                                onBlur={() => setHoveredAssetId(null)}
-                                aria-pressed={on}
-                                className={`group flex w-full items-center gap-3 py-2.5 text-start transition ${
-                                  on ? 'text-white' : 'text-[var(--iti-fp-soft)] hover:text-white'
-                                }`}
-                              >
-                                <span
-                                  className={`h-3 w-3 shrink-0 rounded-full ring-2 ring-white/80 ${
-                                    a.status === 'construction' ? 'outline-1 outline-offset-2 outline-dashed outline-white/70' : ''
-                                  }`}
-                                  style={{ background: SECTORS[a.sector].color }}
-                                  aria-hidden
-                                />
-                                <span className="min-w-0 flex-1">
-                                  <span className="block truncate text-[0.82rem] font-semibold text-white">
-                                    {a.name}
-                                    {a.parent && a.market !== 'egypt' ? ` · ${a.parent}` : ''}
-                                  </span>
-                                  <span className="block text-[0.7rem]">{a.city[lang]}</span>
-                                </span>
-                                <span
-                                  aria-hidden
-                                  className={`text-xs text-[var(--iti-copper-soft)] transition ${
-                                    on ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                                  } ${rtl ? 'rotate-180' : ''}`}
-                                >
-                                  →
-                                </span>
-                              </button>
-                            </li>
-                          )
-                        })}
-                      </ul>
-                      <p className="mt-3 text-xs font-medium text-[var(--iti-copper-soft)]">{t.hintPlants[lang]}</p>
-                    </div>
-                  )}
+                  {marketBrief(focusMarketObj, false)}
                 </motion.div>
               ) : (
                 <motion.div key="hint" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -1012,13 +1063,25 @@ export default function ItiFootprint({ lang }: Props) {
               )}
             </AnimatePresence>
           </div>
+          {/* phones and tablets: only the prompt lives here — the open market is told under the map, so the map never jumps */}
+          <p
+            className={`mt-7 flex items-center gap-3 text-xs font-medium tracking-wide text-[var(--iti-copper-soft)] transition-opacity duration-300 lg:hidden ${
+              focus ? 'opacity-0' : ''
+            }`}
+            aria-hidden={focus ? true : undefined}
+          >
+            <span className="iti-pulse-dot" aria-hidden />
+            {touch ? t.hintTouch[lang] : t.hint[lang]}
+          </p>
         </aside>
 
         {/* ---------- CENTER: globe ---------- */}
-        <div className="relative flex flex-col justify-center px-2 pb-6 sm:px-4 lg:col-span-6 lg:min-h-0 lg:pt-[84px] lg:pb-6">
+        <div className="relative flex flex-col justify-center pb-6 md:px-4 lg:col-span-6 lg:min-h-0 lg:pt-[84px] lg:pb-6">
           <div
             ref={mapBoxRef}
-            className={`iti-globe-stage relative mx-auto w-full max-w-[980px] lg:w-[min(100%,calc((100svh_-_150px)*1.163))] ${focus ? 'is-zoomed' : ''}`}
+            className={`iti-globe-stage relative mx-auto w-[min(100%,calc((100svh_-_96px)*1.163))] max-w-[980px] lg:w-[min(100%,calc((100svh_-_150px)*1.163))] ${focus ? 'is-zoomed' : ''} ${
+              framed ? 'is-framed' : ''
+            }`}
             style={{ aspectRatio: `${W} / ${H}` }}
           >
             <AnimatePresence>
@@ -1530,7 +1593,7 @@ export default function ItiFootprint({ lang }: Props) {
 
             {/* ---------- site card ---------- */}
             <AnimatePresence>
-              {selected && plantsMode && (
+              {wide && selected && plantsMode && (
                 <SideCard key={selected.id} rtl={rtl}>
                   <AssetCard
                     asset={selected}
@@ -1547,7 +1610,7 @@ export default function ItiFootprint({ lang }: Props) {
 
             {/* ---------- overview card (KSA) ---------- */}
             <AnimatePresence>
-              {overviewMarket && (
+              {wide && overviewMarket && (
                 <SideCard key={overviewMarket.id} rtl={rtl}>
                   <OverviewCard market={overviewMarket} lang={lang} onClose={() => setOverview(null)} />
                 </SideCard>
@@ -1555,10 +1618,64 @@ export default function ItiFootprint({ lang }: Props) {
             </AnimatePresence>
           </div>
 
-          <p className="mt-3 text-center text-[0.68rem] tracking-[0.16em] uppercase text-[var(--iti-fp-soft)]">
+          <p className={`mt-3 px-5 text-center text-[0.68rem] tracking-[0.16em] uppercase text-[var(--iti-fp-soft)] ${focus ? 'max-lg:hidden' : ''}`}>
             {touch ? t.mapHintTouch[lang] : t.mapHint[lang]}
             {!focus && ` · ${t.dragHint[lang]}`}
           </p>
+
+          {/* ---------- phones and tablets: the open market, told under the map ---------- */}
+          {focusMarketObj && (
+            <div className="iti-map-dock px-5 pt-4 sm:px-8 lg:hidden">
+              {/* the four markets, one tap apart */}
+              <div ref={tabsRef} className="iti-map-tabs -mx-5 flex gap-2 overflow-x-auto px-5 pb-4 sm:-mx-8 sm:px-8" role="tablist" aria-label={t.markets[lang]}>
+                {MARKETS.map((m) => {
+                  const on = m.id === focus
+                  return (
+                    <button
+                      key={m.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={on}
+                      onClick={() => !on && focusMarket(m.id)}
+                      className={`shrink-0 rounded-full border px-4 py-2 text-[0.8rem] font-semibold transition ${
+                        on ? 'border-white bg-white text-[var(--iti-navy)]' : 'border-white/20 text-[#dbe7ee] active:border-white/60'
+                      }`}
+                    >
+                      {m.name[lang]}
+                    </button>
+                  )
+                })}
+              </div>
+
+              {!wide && selected && plantsMode ? (
+                <motion.div key={selected.id} dir={rtl ? 'rtl' : 'ltr'} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}>
+                  <AssetCard
+                    asset={selected}
+                    lang={lang}
+                    onClose={() => setSelected(null)}
+                    index={selectedSiblings.findIndex((a) => a.id === selected.id)}
+                    total={selectedSiblings.length}
+                    onPrev={() => stepAsset(-1)}
+                    onNext={() => stepAsset(1)}
+                  />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key={focusMarketObj.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                  className="border-t-2 border-[var(--iti-copper)] pt-5"
+                >
+                  {marketBrief(focusMarketObj, true)}
+                  {/* the market's photograph is on the map above; this only says what kind of picture it is */}
+                  {!wide && focusMarketObj.depth === 'overview' && focusMarketObj.illustrative && (
+                    <p className="mt-4 text-[0.68rem] tracking-wide text-[var(--iti-fp-soft)]/80">{t.illustrative[lang]}</p>
+                  )}
+                </motion.div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* ---------- RIGHT: markets + sectors ---------- */}
@@ -1577,10 +1694,9 @@ export default function ItiFootprint({ lang }: Props) {
                     <button
                       type="button"
                       onClick={() => {
+                        // below the desktop layout both of these bring the map back under the bar
                         if (active) backToMap()
                         else focusMarket(m.id)
-                        // on phones the list sits under the globe: bring the globe back into view
-                        if (!wide) mapBoxRef.current?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' })
                       }}
                       onMouseEnter={() => !active && setHovered(m.id)}
                       onMouseLeave={() => setHovered(null)}
@@ -1608,7 +1724,7 @@ export default function ItiFootprint({ lang }: Props) {
                         <span className="block text-xs">{marketCounts(m)}</span>
                       </span>
                       <span className="font-[family-name:var(--iti-head)] text-base font-bold tabular-nums text-white" dir="ltr">
-                        <AnimatedNumber value={moneyValue(m.investment)} prefix="$" suffix="M" replay />
+                        <AnimatedNumber value={moneyValue(m.investment)} prefix="$" suffix="M" replay margin="0px" />
                       </span>
                     </button>
                   </li>
@@ -1619,26 +1735,16 @@ export default function ItiFootprint({ lang }: Props) {
 
           <div>
             <p className="iti-panel-label mb-4">{t.sectors[lang]}</p>
-            <div className="flex flex-wrap gap-2">
-              <button type="button" onClick={() => setSector(null)} aria-pressed={sector === null} className={`iti-chip ${sector === null ? 'iti-chip-on' : ''}`}>
-                {t.allSectors[lang]}
-              </button>
+            {/* a legend, not a control: it names the pin colours and does nothing when pressed */}
+            <ul className="flex flex-wrap gap-x-5 gap-y-2.5">
               {SECTOR_ORDER.map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => setSector((cur) => (cur === s ? null : s))}
-                  aria-pressed={sector === s}
-                  className={`iti-chip ${sector === s ? 'iti-chip-on' : ''}`}
-                >
-                  <span className="h-2.5 w-2.5 rounded-full ring-[1.5px] ring-white/80" style={{ background: SECTORS[s].color }} aria-hidden />
+                <li key={s} className="inline-flex items-center gap-2 text-[0.78rem] text-[#dbe7ee]">
+                  <span className="h-2.5 w-2.5 shrink-0 rounded-full ring-[1.5px] ring-white/80" style={{ background: SECTORS[s].color }} aria-hidden />
                   {SECTORS[s].label[lang]}
-                </button>
+                </li>
               ))}
-            </div>
-            <p className="mt-3 text-[0.68rem] leading-relaxed text-[var(--iti-fp-soft)]/85">
-              {plantsMode ? t.sectorsHintActive[lang] : t.sectorsHint[lang]}
-            </p>
+            </ul>
+            <p className="mt-3 text-[0.68rem] leading-relaxed text-[var(--iti-fp-soft)]/85">{t.sectorsHint[lang]}</p>
             <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-xs text-[var(--iti-fp-soft)]">
               <span className="inline-flex items-center gap-2">
                 <span className="h-3 w-3 rounded-full border-2 border-white bg-[var(--iti-navy)]" aria-hidden />
@@ -1707,12 +1813,12 @@ const moneyValue = (v: string) => parseInt(v.replace(/\D/g, ''), 10) || 0
 /* Cards                                                               */
 /* ------------------------------------------------------------------ */
 
-/** Card pinned to the free right side of a focused frame (the map is never mirrored, so this is physical right) */
+/** Card pinned to the free right side of a focused frame (the map is never mirrored, so this is physical right). Tablets and up; on phones the card sits under the map */
 function SideCard({ rtl, children }: { rtl: boolean; children: ReactNode }) {
   return (
     <div
       dir={rtl ? 'rtl' : 'ltr'}
-      className="iti-sheet fixed inset-x-3 bottom-3 z-40 max-h-[74svh] overflow-y-auto overscroll-contain rounded-2xl md:absolute md:inset-x-auto md:top-1/2 md:right-[2.5%] md:bottom-auto md:max-h-[calc(100%-1rem)] md:w-[min(420px,44%)] md:-translate-y-1/2"
+      className="iti-sheet absolute top-1/2 right-[2.5%] z-40 max-h-[calc(100%-1rem)] w-[min(420px,44%)] -translate-y-1/2 overflow-y-auto overscroll-contain rounded-2xl"
       role="dialog"
     >
       <motion.div
@@ -1727,13 +1833,13 @@ function SideCard({ rtl, children }: { rtl: boolean; children: ReactNode }) {
   )
 }
 
-function CloseButton({ onClose, label }: { onClose: () => void; label: string }) {
+function CloseButton({ onClose, label, top = 'top-3' }: { onClose: () => void; label: string; top?: string }) {
   return (
     <button
       type="button"
       onClick={onClose}
       aria-label={label}
-      className="absolute top-3 end-3 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-[var(--iti-line)] bg-white text-[var(--iti-navy)] transition hover:border-[var(--iti-navy)] hover:bg-[var(--iti-mist)]"
+      className={`absolute ${top} end-3 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-[var(--iti-line)] bg-white text-[var(--iti-navy)] transition hover:border-[var(--iti-navy)] hover:bg-[var(--iti-mist)]`}
     >
       <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" aria-hidden>
         <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
@@ -1781,9 +1887,21 @@ function AssetCard({
   return (
     <div className="relative overflow-hidden rounded-2xl bg-white text-[var(--iti-navy)] shadow-[0_30px_70px_-24px_rgba(0,0,0,0.7)] ring-1 ring-black/5">
       <div className="h-1" style={{ background: `linear-gradient(90deg, ${sector.color}, #a9613a)` }} aria-hidden />
-      <CloseButton onClose={onClose} label={t.close[lang]} />
-      <div className="px-5 pt-5 pb-4 pe-12">
-        <div className="flex flex-wrap items-center gap-2">
+      <CloseButton onClose={onClose} label={t.close[lang]} top="top-[1.1rem]" />
+      {/* Every site reads at one size: the logo, the name, one line of kind, two facts, one short paragraph, the link.
+          The close button shares the logo's row, so the text below has the card's full width; and the body keeps a
+          minimum height, so stepping through a country's sites never makes the card jump. */}
+      <div className="flex flex-col px-5 pt-4 pb-4 md:min-h-[31rem]">
+        <div className="flex h-10 items-center pe-10">
+          {asset.logo ? (
+            <img src={asset.logo} alt="" className="h-full w-auto max-w-[9.5rem] object-contain" loading="lazy" draggable={false} />
+          ) : (
+            <span className="grid h-10 min-w-10 place-items-center rounded-lg bg-[var(--iti-mist)] px-2.5 font-[family-name:var(--iti-head)] text-[0.78rem] font-extrabold tracking-[0.06em] text-[var(--iti-navy)]">
+              {asset.monogram}
+            </span>
+          )}
+        </div>
+        <div className="mt-3.5 flex flex-wrap items-center gap-2">
           {asset.parent && (
             <p className="text-[0.68rem] font-semibold tracking-[0.1em] uppercase text-[var(--iti-copper)]">{asset.parent}</p>
           )}
@@ -1817,18 +1935,12 @@ function AssetCard({
           </span>
         </p>
 
-        {asset.headline && (
-          <p className="mt-4 font-[family-name:var(--iti-head)] text-[1.05rem] leading-snug font-semibold">
-            {asset.headline[lang]}
-          </p>
-        )}
-
         {asset.facts && asset.facts.length > 0 && (
-          <dl className="mt-5 border-t border-[var(--iti-line)]">
-            {asset.facts.map((fact) => (
+          <dl className="mt-4 border-t border-[var(--iti-line)]">
+            {asset.facts.slice(0, 2).map((fact) => (
               <div
                 key={fact.k.en}
-                className="flex items-baseline justify-between gap-4 border-b border-[var(--iti-line)] py-2.5"
+                className="flex items-baseline justify-between gap-4 border-b border-[var(--iti-line)] py-2"
               >
                 <dt className="shrink-0 text-[0.65rem] font-semibold tracking-[0.1em] uppercase text-[var(--iti-ink-soft)]">
                   {fact.k[lang]}
@@ -1839,14 +1951,14 @@ function AssetCard({
           </dl>
         )}
 
-        <p className="mt-5 text-[0.88rem] leading-[1.65] text-[var(--iti-ink-soft)]">{asset.about[lang]}</p>
+        <p className="mt-4 mb-4 text-[0.88rem] leading-[1.65] text-[var(--iti-ink-soft)]">{asset.about[lang]}</p>
 
         {hasSite && (
           <a
             href={asset.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="group mt-5 inline-flex items-center gap-2 border-b border-[var(--iti-copper)] pb-0.5 text-sm font-semibold text-[var(--iti-copper)] transition hover:border-[var(--iti-navy)] hover:text-[var(--iti-navy)]"
+            className="group mt-auto inline-flex items-center gap-2 self-start border-b border-[var(--iti-copper)] pb-0.5 text-sm font-semibold text-[var(--iti-copper)] transition hover:border-[var(--iti-navy)] hover:text-[var(--iti-navy)]"
           >
             {t.visit[lang]}
             <span className="font-normal text-[var(--iti-ink-soft)]" dir="ltr">

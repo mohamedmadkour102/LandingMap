@@ -52,10 +52,9 @@ type Draft = {
     lead: Pair
     ctaPrimary: Pair
     ctaSecondary: Pair
-    countries: Pair
     photo: string
   }
-  about: { eyebrow: Pair; title: Pair; lead: Pair; definesTitle: Pair; pillars: { title: Pair; body: Pair }[] }
+  about: { eyebrow: Pair; title: Pair; lead: Pair }
   stats: Stat[]
   purpose: { eyebrow: Pair; title: Pair; lead: Pair }
   vision: { eyebrow: Pair; headline: Pair; body: Pair }
@@ -74,8 +73,6 @@ function seed(): Draft {
       eyebrow: COPY.about.eyebrow,
       title: COPY.about.title,
       lead: COPY.about.lead,
-      definesTitle: COPY.about.definesTitle,
-      pillars: COPY.about.pillars.map((p) => ({ title: { ...p.title }, body: { ...p.body } })),
     },
     stats: COPY.stats.map((s) => ({ value: String(s.value), prefix: s.prefix, suffix: s.suffix, label: { ...s.label } })),
     purpose: { ...COPY.purpose },
@@ -228,7 +225,6 @@ function HeroEditor({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) =>
           <PairFields label="Lead" value={hero.lead} onChange={(lead) => set({ lead })} area />
           <PairFields label="Primary button" value={hero.ctaPrimary} onChange={(ctaPrimary) => set({ ctaPrimary })} />
           <PairFields label="Secondary button" value={hero.ctaSecondary} onChange={(ctaSecondary) => set({ ctaSecondary })} />
-          <PairFields label="Countries line" value={hero.countries} onChange={(countries) => set({ countries })} />
         </div>
       </Card>
     </>
@@ -244,21 +240,7 @@ function AboutEditor({ draft, setDraft }: { draft: Draft; setDraft: (d: Draft) =
         <div className="flex flex-col gap-5">
           <PairFields label="Eyebrow" value={about.eyebrow} onChange={(eyebrow) => set({ eyebrow })} />
           <PairFields label="Title" value={about.title} onChange={(title) => set({ title })} />
-          <PairFields label="Lead" value={about.lead} onChange={(lead) => set({ lead })} area />
-        </div>
-      </Card>
-      <Card>
-        <div className="flex flex-col gap-5">
-          <PairFields label="Pillars title" value={about.definesTitle} onChange={(definesTitle) => set({ definesTitle })} />
-          {about.pillars.map((pl, i) => {
-            const setPillar = (patch: Partial<typeof pl>) => set({ pillars: about.pillars.map((item, n) => (n === i ? { ...item, ...patch } : item)) })
-            return (
-              <div key={i} className="flex flex-col gap-3 border-t border-[rgba(5,53,82,0.08)] pt-5">
-                <PairFields label={`Pillar ${i + 1}`} value={pl.title} onChange={(title) => setPillar({ title })} />
-                <PairFields label="Supporting line" value={pl.body} onChange={(body) => setPillar({ body })} area />
-              </div>
-            )
-          })}
+          <PairFields label="Lead (wrap highlights in **double asterisks**)" value={about.lead} onChange={(lead) => set({ lead })} area />
         </div>
       </Card>
       <Card>

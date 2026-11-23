@@ -54,12 +54,12 @@ export default function ItiNav({ lang }: { lang: Lang }) {
       {solid && (
         <motion.div className="iti-progress absolute inset-x-0 bottom-0 h-[2px] origin-left rtl:origin-right" style={{ scaleX: progress }} aria-hidden />
       )}
-      <nav className={`mx-auto flex max-w-[1400px] items-center justify-between gap-6 px-5 transition-[height] duration-500 sm:px-8 ${solid ? 'h-[68px]' : 'h-[76px]'}`}>
+      <nav className={`mx-auto flex max-w-[1400px] items-center justify-between gap-3 px-4 transition-[height] min-[360px]:px-5 sm:gap-6 duration-500 sm:px-8 ${solid ? 'h-[68px]' : 'h-[76px]'}`}>
         <a href="#top" aria-label="ITI Group" className="shrink-0">
           {/* Full horizontal logo at its 220px digital minimum (guideline p.14);
               below that, the simplified logo without the descriptor (p.16). */}
           <ItiLogo tone="white" layout="horizontal" className="hidden h-[56px] w-[224px] sm:block" />
-          <ItiLogo tone="white" layout="horizontal" descriptor={false} className="h-9 w-[150px] sm:hidden" />
+          <ItiLogo tone="white" layout="horizontal" descriptor={false} className="h-8 w-[132px] min-[360px]:h-9 min-[360px]:w-[150px] sm:hidden" />
         </a>
 
         <ul className="hidden items-center gap-7 lg:flex">
@@ -85,7 +85,7 @@ export default function ItiNav({ lang }: { lang: Lang }) {
           ))}
         </ul>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 min-[360px]:gap-3">
           <Link
             to={`/${other}`}
             lang={other}

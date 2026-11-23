@@ -234,7 +234,9 @@ export interface Asset {
   milestone: L
   investment?: string
   headline?: L
+  /** One short paragraph — about 120–175 characters, so every card reads at the same size */
   about: L
+  /** The card shows the first two; any others are kept here for reference */
   facts?: Fact[]
   /** Image key (see media.ts) */
   photo: string
@@ -262,13 +264,13 @@ export const ASSETS: Asset[] = [
     milestone: { en: 'Operational since 1987', ar: 'يعمل منذ 1987' },
     headline: { en: 'Building on a legacy since 1987', ar: 'نبني على إرثٍ منذ 1987' },
     about: {
-      en: 'Since 1987, Amreyah Cement has contributed to Egypt’s construction sector through integrated cement manufacturing in Alexandria. Its three production lines serve more than 700 clients across Egypt and six international markets, backed by internationally recognised quality, environmental and occupational-safety certifications.',
-      ar: 'منذ عام 1987، تُسهم أسمنت العامرية في قطاع البناء المصري عبر عمليات متكاملة لتصنيع الأسمنت في الإسكندرية. وتخدم خطوطها الثلاثة أكثر من 700 عميل في مصر وستة أسواق دولية، مدعومةً بشهادات دولية في الجودة والبيئة والسلامة المهنية.',
+      en: 'Integrated grey cement manufacturing in Alexandria since 1987. Three production lines serve more than 700 clients across Egypt and six international markets.',
+      ar: 'تصنيع متكامل للأسمنت الرمادي في الإسكندرية منذ 1987. تخدم خطوطها الثلاثة أكثر من 700 عميل في مصر وستة أسواق دولية.',
     },
     facts: [
       f('Annual capacity', 'الطاقة السنوية', '5.5 million tonnes', '5.5 مليون طن'),
-      f('Production lines', 'خطوط الإنتاج', '3', '3'),
       f('Workforce', 'القوى العاملة', '1,000+', '+1,000'),
+      f('Production lines', 'خطوط الإنتاج', '3', '3'),
       f('Clients', 'العملاء', '700+', '+700'),
       f('Mega projects', 'مشروعات كبرى', '50+', '+50'),
       f('Markets', 'الأسواق', 'Egypt + 6 international', 'مصر + 6 أسواق دولية'),
@@ -290,9 +292,13 @@ export const ASSETS: Asset[] = [
     kind: { en: 'Grey Cement Plant', ar: 'مصنع أسمنت رمادي' },
     milestone: { en: 'Operational since 2004', ar: 'يعمل منذ 2004' },
     about: {
-      en: 'Grey cement plant in Alexandria, part of the Group’s vertically integrated cement network.',
-      ar: 'مصنع أسمنت رمادي في الإسكندرية، ضمن شبكة الأسمنت المتكاملة رأسيًا للمجموعة.',
+      en: 'A grey cement plant in Alexandria, operating since 2004 as part of the Group’s vertically integrated cement network in Egypt.',
+      ar: 'مصنع أسمنت رمادي في الإسكندرية، يعمل منذ 2004 ضمن شبكة الأسمنت المتكاملة رأسيًا للمجموعة في مصر.',
     },
+    facts: [
+      f('Product', 'المنتج', 'Grey cement', 'أسمنت رمادي'),
+      f('In operation since', 'يعمل منذ', '2004', '2004'),
+    ],
     photo: 'cimpor',
     illustrative: true,
     url: PLACEHOLDER_URL,
@@ -307,18 +313,18 @@ export const ASSETS: Asset[] = [
     coords: [30.8, 29.53],
     sector: 'metals',
     status: 'construction',
-    kind: { en: 'Power Cables & Overhead Conductors', ar: 'كابلات القوى والموصلات الهوائية' },
+    kind: { en: 'Power Cables & Conductors', ar: 'كابلات القوى والموصلات' },
     milestone: { en: 'Completion Q3 2026', ar: 'الاكتمال: الربع الثالث 2026' },
     investment: '$80M',
     headline: { en: 'Connecting power to progress', ar: 'نوصل الطاقة بالتقدّم' },
     about: {
-      en: 'Ventura Cables manufactures power cables and overhead conductors for the energy, infrastructure and construction sectors, with advanced European machinery across wire drawing, stranding, armouring, insulation and sheathing.',
-      ar: 'تصنّع فينتورا للكابلات كابلات القوى والموصلات الهوائية لقطاعات الطاقة والبنية التحتية والإنشاءات، بمعدات أوروبية متقدمة في مراحل السحب والجدل والتسليح والعزل والتغليف.',
+      en: 'Power cables and overhead conductors for energy, infrastructure and construction, made on advanced European machinery from wire drawing to sheathing.',
+      ar: 'كابلات قوى وموصلات هوائية لقطاعات الطاقة والبنية التحتية والإنشاءات، تُصنَّع بمعدات أوروبية متقدمة من السحب حتى التغليف.',
     },
     facts: [
-      f('Range', 'المنتجات', 'Low-, medium- & high-voltage cables', 'كابلات جهد منخفض ومتوسط وعالٍ'),
+      f('Range', 'المنتجات', 'Low- to high-voltage cables', 'كابلات جهد منخفض إلى عالٍ'),
+      f('Markets', 'الأسواق', 'Egypt, Middle East, global', 'مصر والشرق الأوسط وعالميًا'),
       f('Also', 'إضافةً إلى', 'Overhead conductors', 'الموصلات الهوائية'),
-      f('Markets', 'الأسواق', 'Egypt, Middle East, international', 'مصر والشرق الأوسط والأسواق الدولية'),
     ],
     photo: 'ventura',
     illustrative: true,
@@ -339,13 +345,13 @@ export const ASSETS: Asset[] = [
     milestone: { en: 'Completion Q4 2026', ar: 'الاكتمال: الربع الرابع 2026' },
     headline: { en: 'Connecting cement to global markets', ar: 'نربط الأسمنت بالأسواق العالمية' },
     about: {
-      en: 'European Co. operates cement export terminals at Al Dekheila Port, Alexandria — the export link between the Group’s cement manufacturing and global markets, carrying Egyptian cement beyond domestic borders.',
-      ar: 'تدير European Co. محطات تصدير الأسمنت في ميناء الدخيلة بالإسكندرية، لتكون حلقة التصدير بين قدرات المجموعة في تصنيع الأسمنت والأسواق العالمية، وتنقل الأسمنت المصري إلى ما وراء الحدود.',
+      en: 'Cement export terminals at Al Dekheila Port, Alexandria: the link that carries the Group’s Egyptian cement from its plants to global markets.',
+      ar: 'محطات تصدير الأسمنت في ميناء الدخيلة بالإسكندرية: الحلقة التي تنقل أسمنت المجموعة المصري من مصانعها إلى الأسواق العالمية.',
     },
     facts: [
-      f('Operations', 'العمليات', 'Cement terminal & export handling', 'تشغيل محطات الأسمنت ومناولة التصدير'),
       f('Storage', 'سعة التخزين', '75,000 tonnes', '75 ألف طن'),
-      f('Throughput', 'المناولة السنوية', '2 million+ tonnes / year', 'أكثر من مليوني طن سنويًا'),
+      f('Throughput', 'المناولة السنوية', '2 million+ t / year', '+2 مليون طن سنويًا'),
+      f('Operations', 'العمليات', 'Cement terminal & export handling', 'تشغيل محطات الأسمنت ومناولة التصدير'),
     ],
     photo: 'european',
     logo: '/iti/logos/european.png',
@@ -365,15 +371,15 @@ export const ASSETS: Asset[] = [
     milestone: { en: 'Producing since 2010', ar: 'ينتج منذ 2010' },
     headline: { en: 'White cement. Global reach.', ar: 'أسمنت أبيض. وصول عالمي.' },
     about: {
-      en: 'Drawing on the natural quality of El Minya’s limestone, Royal El Minya Cement manufactures white Portland and white masonry cement for architectural, decorative and construction applications — reaching more than 25 countries, with direct distribution in the United States, Poland, Saudi Arabia and South Korea.',
-      ar: 'تستند أسمنت المنيا رويال إلى الجودة الطبيعية لخامات الحجر الجيري في المنيا، لتصنّع الأسمنت البورتلاندي الأبيض وأسمنت المباني الأبيض للتطبيقات المعمارية والزخرفية والإنشائية، وتصل منتجاتها إلى أكثر من 25 دولة، مع توزيع مباشر في الولايات المتحدة وبولندا والسعودية وكوريا الجنوبية.',
+      en: 'White Portland and white masonry cement made from El Minya’s limestone, for architectural, decorative and construction use around the world.',
+      ar: 'أسمنت بورتلاندي أبيض وأسمنت مبانٍ أبيض من حجر المنيا الجيري، للتطبيقات المعمارية والزخرفية والإنشائية حول العالم.',
     },
     facts: [
+      f('Export markets', 'أسواق التصدير', '25+ countries', 'أكثر من 25 دولة'),
+      f('Direct distribution', 'التوزيع المباشر', '4 countries', '4 دول'),
       f('Established', 'التأسيس', '2006', '2006'),
       f('Production since', 'بدء الإنتاج', '2010', '2010'),
       f('Workforce', 'القوى العاملة', '300+', '+300'),
-      f('Export markets', 'أسواق التصدير', '25+ countries', 'أكثر من 25 دولة'),
-      f('Direct distribution', 'التوزيع المباشر', '4 countries', '4 دول'),
     ],
     photo: 'royal-elminya',
     logo: '/iti/logos/royal-elminya.png',
@@ -393,13 +399,13 @@ export const ASSETS: Asset[] = [
     milestone: { en: 'Operational since 1989', ar: 'يعمل منذ 1989' },
     headline: { en: 'A legacy of white cement since 1989', ar: 'إرثٌ في الأسمنت الأبيض منذ 1989' },
     about: {
-      en: 'Since 1989, Cleopatra Cement has manufactured white cement in Samalout, El Minya, for construction markets in Egypt and abroad. Its high-strength White Portland Cement, CEM I 52.5N, is used in more than 20 countries and backed by a verified Environmental Product Declaration.',
-      ar: 'منذ عام 1989، تصنّع أسمنت كليوباترا الأسمنت الأبيض في سمالوط بالمنيا لأسواق البناء في مصر وخارجها. ويُستخدم أسمنتها البورتلاندي الأبيض عالي المقاومة CEM I 52.5N في أكثر من 20 دولة، مدعومًا بإقرار بيئي موثّق للمنتج (EPD).',
+      en: 'White cement made in Samalout, El Minya, since 1989. Its high-strength CEM I 52.5N is backed by a verified Environmental Product Declaration.',
+      ar: 'أسمنت أبيض يُصنَّع في سمالوط بالمنيا منذ 1989. وأسمنتها عالي المقاومة CEM I 52.5N مدعوم بإقرار بيئي موثّق للمنتج (EPD).',
     },
     facts: [
-      f('Clinker capacity', 'طاقة الكلنكر', '300,000 t / year', '300 ألف طن سنويًا'),
       f('Cement capacity', 'طاقة الأسمنت', '420,000 t / year', '420 ألف طن سنويًا'),
-      f('International presence', 'الحضور الدولي', '20+ countries', 'أكثر من 20 دولة'),
+      f('Presence', 'الحضور الدولي', '20+ countries', 'أكثر من 20 دولة'),
+      f('Clinker capacity', 'طاقة الكلنكر', '300,000 t / year', '300 ألف طن سنويًا'),
       f('Flagship product', 'المنتج الرئيسي', 'CEM I 52.5N white', 'CEM I 52.5N أبيض'),
     ],
     photo: 'cleopatra',
@@ -421,13 +427,13 @@ export const ASSETS: Asset[] = [
     investment: '$200M',
     headline: { en: 'Advancing Egypt’s non-ferrous metals industry', ar: 'نرتقي بصناعة المعادن غير الحديدية في مصر' },
     about: {
-      en: 'Established in 2021, Cyprometal Industries is developing zinc refining that turns primary and secondary raw materials into Special High Grade zinc to London Metal Exchange standards, using enclosed hybrid technology focused on dust containment, material recovery and waste reduction.',
-      ar: 'تأسست سيبروميتال للصناعات عام 2021، وتطوّر عمليات لتكرير الزنك تحوّل الخامات الأولية والثانوية إلى زنك عالي الجودة (SHG) وفق معايير بورصة لندن للمعادن، بتقنية هجينة مغلقة تركّز على احتواء الغبار واسترجاع المواد وتقليل المخلفات.',
+      en: 'Refining primary and secondary raw materials into Special High Grade zinc to London Metal Exchange standards, with enclosed, low-waste hybrid technology.',
+      ar: 'تكرير الخامات الأولية والثانوية إلى زنك عالي الجودة (SHG) وفق معايير بورصة لندن للمعادن، بتقنية هجينة مغلقة تقلّل المخلفات.',
     },
     facts: [
-      f('Established', 'التأسيس', '2021', '2021'),
       f('Phase one', 'المرحلة الأولى', '50,000 t / year', '50 ألف طن سنويًا'),
       f('Planned', 'الطاقة المخططة', '100,000 t / year', '100 ألف طن سنويًا'),
+      f('Established', 'التأسيس', '2021', '2021'),
       f('Roadmap', 'خطة التوسّع', 'Copper, lead, rare earths', 'النحاس والرصاص والعناصر الأرضية النادرة'),
     ],
     photo: 'cyprometal',
@@ -439,7 +445,6 @@ export const ASSETS: Asset[] = [
     id: 'bmic',
     market: 'egypt',
     name: 'BMIC',
-    parent: 'Building Materials Industry Company',
     monogram: 'BMIC',
     city: { en: 'Assiut', ar: 'أسيوط' },
     coords: [27.18, 31.18],
@@ -449,12 +454,12 @@ export const ASSETS: Asset[] = [
     milestone: { en: 'Producing since 2012', ar: 'ينتج منذ 2012' },
     headline: { en: 'Strengthening construction in Upper Egypt', ar: 'نعزّز قطاع البناء في صعيد مصر' },
     about: {
-      en: 'Founded in 2007 with an investment exceeding EGP 2 billion, BMIC brought modern cement manufacturing to Upper Egypt. Since production began in 2012, its Al Tameer brand has supplied residential, commercial and national infrastructure projects across Egypt.',
-      ar: 'تأسست BMIC عام 2007 باستثمارات تتجاوز ملياري جنيه مصري، لتجلب صناعة الأسمنت الحديثة إلى صعيد مصر. ومنذ بدء الإنتاج عام 2012، تورّد علامتها «التعمير» لمشروعات سكنية وتجارية وبنية تحتية قومية في أنحاء مصر.',
+      en: 'Building Materials Industry Company brought modern cement manufacturing to Upper Egypt. Its Al Tameer brand supplies housing, commercial and national projects.',
+      ar: 'جلبت شركة صناعات مواد البناء صناعة الأسمنت الحديثة إلى صعيد مصر، وتورّد علامتها «التعمير» للمشروعات السكنية والتجارية والقومية.',
     },
     facts: [
-      f('Established', 'التأسيس', '2007', '2007'),
       f('Annual capacity', 'الطاقة السنوية', '1.5 million tonnes', '1.5 مليون طن'),
+      f('Established', 'التأسيس', '2007', '2007'),
       f('Founding investment', 'الاستثمار التأسيسي', 'EGP 2 billion+', 'أكثر من ملياري جنيه'),
       f('Brand', 'العلامة التجارية', 'Al Tameer', 'التعمير'),
     ],
@@ -475,16 +480,16 @@ export const ASSETS: Asset[] = [
     sector: 'cement-terminals',
     status: 'operational',
     kind: { en: 'Port Cement Terminal', ar: 'محطة أسمنت بحرية' },
-    milestone: { en: 'Largest privately held port cement terminal globally', ar: 'أكبر محطة أسمنت بحرية مملوكة للقطاع الخاص عالميًا' },
+    milestone: { en: 'Operational', ar: 'قيد التشغيل' },
     headline: { en: 'Connecting cement to global markets', ar: 'نربط الأسمنت بالأسواق العالمية' },
     about: {
-      en: 'Established in 2014, SESCO Cement imports, stores and distributes cement across the U.S. Gulf Coast and Southeast. Its Houston terminal combines direct port access, advanced vessel unloading, bulk storage, automated packing lines and rail connectivity.',
-      ar: 'تأسست SESCO للأسمنت عام 2014، وتعمل في استيراد الأسمنت وتخزينه وتوزيعه على امتداد ساحل الخليج والجنوب الشرقي للولايات المتحدة. وتجمع محطتها في هيوستن بين الوصول المباشر إلى الميناء، وأنظمة متقدمة لتفريغ السفن، والتخزين السائب، وخطوط تعبئة آلية، والربط بالسكك الحديدية.',
+      en: 'The largest privately held port cement terminal in the world: direct port access, advanced vessel unloading, bulk storage, automated packing and rail.',
+      ar: 'أكبر محطة أسمنت بحرية مملوكة للقطاع الخاص في العالم: وصول مباشر إلى الميناء، وتفريغ متقدم للسفن، وتخزين سائب، وتعبئة آلية، وربط بالسكك الحديدية.',
     },
     facts: [
-      f('Established', 'التأسيس', '2014', '2014'),
       f('Houston storage', 'سعة هيوستن', '250,000 tonnes', '250 ألف طن'),
       f('Network storage', 'سعة الشبكة', '≈350,000 tonnes', 'نحو 350 ألف طن'),
+      f('Established', 'التأسيس', '2014', '2014'),
       f('Connectivity', 'الربط', 'Deep-water berth · rail', 'رصيف بحري · سكك حديدية'),
     ],
     photo: 'sesco-houston',
@@ -528,16 +533,16 @@ export const ASSETS: Asset[] = [
     sector: 'cement-terminals',
     status: 'operational',
     kind: { en: 'White Cement Distribution', ar: 'توزيع الأسمنت الأبيض' },
-    milestone: { en: 'European representative of Royal El Minya', ar: 'الممثل الأوروبي لأسمنت المنيا رويال' },
+    milestone: { en: 'Operational', ar: 'قيد التشغيل' },
     headline: { en: 'Bringing Egyptian white cement to Europe', ar: 'نحمل الأسمنت الأبيض المصري إلى أوروبا' },
     about: {
-      en: 'Royal Cement EU is the European commercial representative of Royal El Minya Cement. From Poland it supports product availability, regulatory documentation and market access, connecting Royal El Minya’s white cement with customers and partners across Europe.',
-      ar: 'Royal Cement EU هي الممثل التجاري الأوروبي لأسمنت المنيا رويال. ومن بولندا تدعم توافر المنتجات والوثائق التنظيمية والنفاذ إلى الأسواق، لتربط الأسمنت الأبيض من رويال المنيا بالعملاء والشركاء في أنحاء أوروبا.',
+      en: 'The European commercial representative of Royal El Minya Cement: from Poland it supports product availability, documentation and market access across Europe.',
+      ar: 'الممثل التجاري الأوروبي لأسمنت المنيا رويال: تدعم من بولندا توافر المنتجات والوثائق التنظيمية والنفاذ إلى الأسواق في أنحاء أوروبا.',
     },
     facts: [
-      f('Parent manufacturer', 'الشركة المصنّعة', 'Royal El Minya Cement', 'أسمنت المنيا رويال'),
       f('Manufacturing base', 'قاعدة التصنيع', 'El Minya, Egypt', 'المنيا، مصر'),
       f('Market focus', 'السوق المستهدف', 'European Union', 'الاتحاد الأوروبي'),
+      f('Parent manufacturer', 'الشركة المصنّعة', 'Royal El Minya Cement', 'أسمنت المنيا رويال'),
     ],
     photo: 'royal-elminya',
     logo: '/iti/logos/royal-elminya.png',
@@ -560,6 +565,10 @@ export const ASSETS: Asset[] = [
       en: 'A Royal Cement EU terminal in Gdańsk, Poland, supporting the availability of Royal El Minya white cement in European markets.',
       ar: 'محطة تابعة لـ Royal Cement EU في غدانسك ببولندا، تدعم توافر الأسمنت الأبيض من رويال المنيا في الأسواق الأوروبية.',
     },
+    facts: [
+      f('Product', 'المنتج', 'White cement', 'أسمنت أبيض'),
+      f('Serves', 'يخدم', 'European markets', 'الأسواق الأوروبية'),
+    ],
     photo: 'eu-gdansk',
     logo: '/iti/logos/royal-elminya.png',
     url: 'https://www.royalcement.eu',
@@ -580,6 +589,10 @@ export const ASSETS: Asset[] = [
       en: 'A Royal Cement EU terminal in the Netherlands, serving the Benelux markets with Royal El Minya white cement.',
       ar: 'محطة تابعة لـ Royal Cement EU في هولندا، تخدم أسواق البنلوكس بالأسمنت الأبيض من رويال المنيا.',
     },
+    facts: [
+      f('Product', 'المنتج', 'White cement', 'أسمنت أبيض'),
+      f('Serves', 'يخدم', 'Benelux markets', 'أسواق البنلوكس'),
+    ],
     photo: 'eu-benelux',
     logo: '/iti/logos/royal-elminya.png',
     url: 'https://www.royalcement.eu',
@@ -600,6 +613,10 @@ export const ASSETS: Asset[] = [
       en: 'A Royal Cement EU terminal in Ravenna, Italy, supporting the availability of Royal El Minya white cement in southern Europe.',
       ar: 'محطة تابعة لـ Royal Cement EU في رافينا بإيطاليا، تدعم توافر الأسمنت الأبيض من رويال المنيا في جنوب أوروبا.',
     },
+    facts: [
+      f('Product', 'المنتج', 'White cement', 'أسمنت أبيض'),
+      f('Serves', 'يخدم', 'Southern Europe', 'جنوب أوروبا'),
+    ],
     photo: 'eu-ravenna',
     logo: '/iti/logos/royal-elminya.png',
     url: 'https://www.royalcement.eu',
@@ -787,7 +804,6 @@ export const COPY = {
     },
     ctaPrimary: { en: 'Explore our footprint', ar: 'اكتشف حضورنا العالمي' },
     ctaSecondary: { en: 'About ITI Group', ar: 'تعرّف على المجموعة' },
-    countries: { en: 'Egypt · United States · Saudi Arabia · United Kingdom · Poland · Netherlands · Italy', ar: 'مصر · الولايات المتحدة · السعودية · المملكة المتحدة · بولندا · هولندا · إيطاليا' },
     scroll: { en: 'Scroll', ar: 'مرّر' },
     /** Background slider — real Group sites only (photos from the Neusoft brand pack), Egypt and the U.S. alternating */
     slides: [
@@ -803,34 +819,11 @@ export const COPY = {
     eyebrow: { en: 'About Us', ar: 'من نحن' },
     /** a newline marks the display line break; the last words carry the copper accent */
     title: { en: 'An integrated industrial group\nwith a lasting legacy.', ar: 'مجموعة صناعية متكاملة\nذات إرثٍ راسخ.' },
+    /** **double asterisks** set a phrase in navy semibold: the Group's three defining traits, read inside the paragraph */
     lead: {
-      en: 'Rooted in Egypt and operating across North America, Europe and the Middle East, ITI Group builds and runs the industrial businesses that infrastructure depends on — and invests in them for the long term.',
-      ar: 'انطلاقًا من مصر، وبعمليات في أمريكا الشمالية وأوروبا والشرق الأوسط، تبني مجموعة ITI وتدير الأعمال الصناعية التي تقوم عليها البنية التحتية، وتستثمر فيها على المدى الطويل.',
+      en: 'Rooted in Egypt and operating across North America, Europe and the Middle East, ITI Group brings **infrastructure, building materials, mining and non-ferrous metals** under one Group — runs the **value chain end to end**, from production to storage, logistics and distribution — and invests for **long-term value**.',
+      ar: 'انطلاقًا من مصر، وبعمليات في أمريكا الشمالية وأوروبا والشرق الأوسط، تجمع مجموعة ITI **البنية التحتية ومواد البناء والتعدين والمعادن غير الحديدية** تحت مظلة واحدة، وتدير **سلسلة القيمة من بدايتها إلى نهايتها** من الإنتاج إلى التخزين والخدمات اللوجستية والتوزيع، وتستثمر من أجل **قيمة تدوم على المدى الطويل**.',
     },
-    definesTitle: { en: 'Built to endure', ar: 'بُنيت لتدوم' },
-    pillars: [
-      {
-        title: { en: 'Diversified industrial portfolio', ar: 'محفظة صناعية متنوعة' },
-        body: {
-          en: 'Infrastructure, building materials, mining and non-ferrous metals under one Group.',
-          ar: 'البنية التحتية ومواد البناء والتعدين والمعادن غير الحديدية تحت مظلة مجموعة واحدة.',
-        },
-      },
-      {
-        title: { en: 'Integrated capabilities', ar: 'قدرات متكاملة' },
-        body: {
-          en: 'From production to storage, logistics and distribution — the value chain run end to end.',
-          ar: 'من الإنتاج إلى التخزين والخدمات اللوجستية والتوزيع، ندير سلسلة القيمة من بدايتها إلى نهايتها.',
-        },
-      },
-      {
-        title: { en: 'Long-term value creation', ar: 'قيمة تدوم على المدى الطويل' },
-        body: {
-          en: 'Patient, strategic investment in businesses built to last for their markets and communities.',
-          ar: 'استثمار استراتيجي طويل الأمد في أعمال تُبنى لتدوم لأسواقها ومجتمعاتها.',
-        },
-      },
-    ] as { title: L; body: L }[],
   },
   /** Group figures — a snapshot strip in About */
   stats: [
@@ -849,6 +842,9 @@ export const COPY = {
   },
   mission: {
     eyebrow: { en: 'Our Mission', ar: 'رسالتنا' },
+    short: { en: 'Mission', ar: 'الرسالة' },
+    /** the phrase the Manifesto version sets in copper — must appear verbatim in the headline */
+    accent: { en: 'world-class', ar: 'بمستوى عالمي' },
     headline: { en: 'We build and operate world-class industrial businesses.', ar: 'نبني ونُدير أعمالًا صناعية بمستوى عالمي.' },
     body: {
       en: 'Combining investment, expertise and integrated supply chains to create sustainable long-term value.',
@@ -857,6 +853,8 @@ export const COPY = {
   },
   vision: {
     eyebrow: { en: 'Our Vision', ar: 'رؤيتنا' },
+    short: { en: 'Vision', ar: 'الرؤية' },
+    accent: { en: 'global force', ar: 'قوة عالمية' },
     headline: { en: 'To be a global force in industrial investment.', ar: 'أن نكون قوة عالمية في الاستثمار الصناعي.' },
     body: {
       en: 'Building businesses that shape markets, connect industries, and create lasting value.',
@@ -931,14 +929,9 @@ export const COPY = {
     hintPlants: { en: 'Select a site to see its profile.', ar: 'اختر موقعًا لعرض نبذة عنه.' },
     markets: { en: 'Markets', ar: 'الأسواق' },
     sectors: { en: 'Sectors', ar: 'القطاعات' },
-    allSectors: { en: 'All', ar: 'الكل' },
     sectorsHint: {
-      en: 'Zoom into a market to filter sites by sector. Pin colours match these chips.',
-      ar: 'كبّر على سوق لتصفية المواقع حسب القطاع. ألوان النقاط تطابق هذه الشارات.',
-    },
-    sectorsHintActive: {
-      en: 'Filtering sites on the map and in the list.',
-      ar: 'تصفية المواقع على الخريطة وفي القائمة.',
+      en: 'Pin colours on the map show each site’s sector.',
+      ar: 'ألوان النقاط على الخريطة توضّح قطاع كل موقع.',
     },
     back: { en: 'Back to globe', ar: 'العودة إلى الكرة الأرضية' },
     investment: { en: 'Total investment', ar: 'إجمالي الاستثمار' },
@@ -1016,10 +1009,11 @@ export interface InquiryField {
 }
 
 /** Four routes into the Group. Each adds at most two short questions, only where they help the team route the message */
-export const INQUIRIES: { id: InquiryId; title: L; fields: InquiryField[]; placeholder: L }[] = [
+export const INQUIRIES: { id: InquiryId; title: L; blurb: L; fields: InquiryField[]; placeholder: L }[] = [
   {
     id: 'partnership',
     title: { en: 'Investment & Partnerships', ar: 'الاستثمار والشراكات' },
+    blurb: { en: 'Investment opportunities and strategic partnerships.', ar: 'فرص الاستثمار والشراكات الاستراتيجية.' },
     fields: [
       {
         id: 'organisation',
@@ -1051,6 +1045,7 @@ export const INQUIRIES: { id: InquiryId; title: L; fields: InquiryField[]; place
   {
     id: 'procurement',
     title: { en: 'Procurement & Suppliers', ar: 'المشتريات والموردون' },
+    blurb: { en: 'Equipment, materials and services for our operations.', ar: 'المعدات والمواد والخدمات اللازمة لعملياتنا.' },
     fields: [
       {
         id: 'supplies',
@@ -1070,6 +1065,7 @@ export const INQUIRIES: { id: InquiryId; title: L; fields: InquiryField[]; place
   {
     id: 'distribution',
     title: { en: 'Distribution & Logistics', ar: 'التوزيع والخدمات اللوجستية' },
+    blurb: { en: 'Cement, zinc, cables and terminal services.', ar: 'الأسمنت والزنك والكابلات وخدمات المحطات.' },
     fields: [
       {
         id: 'product',
@@ -1104,12 +1100,25 @@ export const INQUIRIES: { id: InquiryId; title: L; fields: InquiryField[]; place
   {
     id: 'general',
     title: { en: 'General Inquiry', ar: 'استفسار عام' },
+    blurb: { en: 'Anything else you would like to ask us.', ar: 'أي أمر آخر تودّ أن تسألنا عنه.' },
     fields: [],
     placeholder: { en: 'Tell us about your inquiry, opportunity, or request…', ar: 'أخبرنا عن استفسارك أو الفرصة أو طلبك…' },
   },
 ]
 
 export const CONTACT_FORM = {
+  /* the invitation that stands in the section; the form itself opens in a drawer */
+  launchEyebrow: { en: 'Send an inquiry', ar: 'أرسل استفسارًا' },
+  launchTitle: { en: 'What would you like to discuss?', ar: 'ما الذي تودّ مناقشته؟' },
+  launchCta: { en: 'Start an inquiry', ar: 'ابدأ استفسارًا' },
+  launchNote: {
+    en: 'A short form, about two minutes. It opens your email app; nothing is sent until you press send.',
+    ar: 'نموذج قصير يستغرق دقيقتين تقريبًا. يفتح تطبيق البريد لديك، ولا يُرسل شيء حتى تضغط إرسال.',
+  },
+  drawerTitle: { en: 'Tell us about your inquiry', ar: 'أخبرنا عن استفسارك' },
+  emailDirect: { en: 'Email us directly', ar: 'راسلنا مباشرة' },
+  routesLead: { en: 'Or start from a topic', ar: 'أو ابدأ من موضوع' },
+  closeForm: { en: 'Close the form', ar: 'أغلق النموذج' },
   type: { en: 'Inquiry type', ar: 'نوع الاستفسار' },
   name: { en: 'Full name', ar: 'الاسم الكامل' },
   namePh: { en: 'Your full name', ar: 'اسمك الكامل' },
