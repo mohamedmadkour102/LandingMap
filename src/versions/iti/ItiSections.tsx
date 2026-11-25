@@ -147,10 +147,10 @@ export function ItiHero({ lang }: { lang: Lang }) {
           delay={0.35}
           emphasis={emph(lang, 2, 1)}
           text={t.title[lang]}
-          className="iti-display mt-6 max-w-[14ch] text-[clamp(2.8rem,6.8vw,6.4rem)] rtl:max-w-[15ch] rtl:text-[clamp(2.4rem,5.6vw,5.2rem)]"
+          className="iti-display mt-6 max-w-[14ch] text-[length:var(--iti-fs-hero)] rtl:max-w-[15ch] rtl:text-[clamp(2.1rem,4.4vw,4rem)]"
         />
         <motion.p
-          className="mt-7 max-w-xl text-[1.06rem] leading-relaxed text-white/85 [text-shadow:0_1px_12px_rgb(2_26_43/0.5)] sm:text-lg"
+          className="mt-7 max-w-xl text-[length:var(--iti-fs-lead)] leading-relaxed text-white/85 [text-shadow:0_1px_12px_rgb(2_26_43/0.5)]"
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.85, duration: 0.7 }}
@@ -323,7 +323,7 @@ export function ItiAbout({ lang }: { lang: Lang }) {
             </Reveal>
             <SplitReveal text={t.title[lang]} emphasis={emph(lang, 3, 2)} className="iti-h2 iti-about-title mt-5" />
             <Reveal delay={0.1}>
-              <p className="mt-7 max-w-[60ch] text-[1.06rem] leading-[1.8] text-[var(--iti-ink-soft)] sm:text-[1.12rem]">
+              <p className="mt-7 max-w-[60ch] text-[length:var(--iti-fs-lead)] leading-[1.8] text-[var(--iti-ink-soft)]">
                 <Highlights text={t.lead[lang]} />
               </p>
             </Reveal>
@@ -360,7 +360,7 @@ export function ItiAbout({ lang }: { lang: Lang }) {
                 {s.label[lang]}
               </dt>
               <dd
-                className="relative w-fit pb-2 font-[family-name:var(--iti-head)] text-[clamp(2.1rem,3.2vw,3rem)] leading-none font-extrabold tracking-tight text-white transition-transform duration-500 ease-out motion-safe:group-hover:-translate-y-1"
+                className="relative w-fit pb-2 font-[family-name:var(--iti-head)] text-[clamp(1.85rem,2.7vw,2.5rem)] leading-none font-extrabold tracking-tight text-white transition-transform duration-500 ease-out motion-safe:group-hover:-translate-y-1"
                 dir="ltr"
               >
                 <span className="text-[var(--iti-champagne)]">{s.prefix}</span>
@@ -733,7 +733,7 @@ export function ItiValues({ lang }: { lang: Lang }) {
           </Reveal>
           <SplitReveal text={t.title[lang]} emphasis={emph(lang, 1, 1)} className="iti-h2 iti-values-title mt-5" />
           <Reveal delay={0.1}>
-            <p className="mt-6 max-w-[58ch] text-[1.06rem] leading-[1.75] text-white/70 sm:text-[1.12rem]">{t.lead[lang]}</p>
+            <p className="mt-6 max-w-[58ch] text-[length:var(--iti-fs-lead)] leading-[1.75] text-white/70">{t.lead[lang]}</p>
           </Reveal>
         </div>
 
@@ -1139,7 +1139,7 @@ function InquiryForm({ lang, preset }: { lang: Lang; preset: { id: InquiryId | n
             </svg>
           </motion.span>
           <motion.h3
-            className="mt-6 font-[family-name:var(--iti-head)] text-[1.45rem] leading-snug font-bold text-[var(--iti-navy)]"
+            className="mt-6 font-[family-name:var(--iti-head)] text-[1.3rem] leading-snug font-bold text-[var(--iti-navy)]"
             initial={reduce ? false : { opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, ease: EASE_OUT, delay: reduce ? 0 : 0.22 }}
@@ -1450,7 +1450,7 @@ function InquiryDrawer({
           <div className="iti-drawer-head">
             <div>
               <p className="iti-eyebrow">{f.launchEyebrow[lang]}</p>
-              <h3 id={`cf-${mode}-title`} className="mt-3 font-[family-name:var(--iti-head)] text-[clamp(1.4rem,2.2vw,1.8rem)] leading-tight font-extrabold text-[var(--iti-navy)]">
+              <h3 id={`cf-${mode}-title`} className="mt-3 font-[family-name:var(--iti-head)] text-[length:var(--iti-fs-h3)] leading-tight font-extrabold text-[var(--iti-navy)]">
                 {f.drawerTitle[lang]}
               </h3>
             </div>
@@ -1493,7 +1493,7 @@ function InquiryLaunch({ lang, onOpen }: { lang: Lang; onOpen: (id: InquiryId | 
   return (
     <div className="iti-launch relative overflow-hidden rounded-[26px] p-7 text-white sm:p-10">
       <p className="iti-eyebrow iti-eyebrow-light">{f.launchEyebrow[lang]}</p>
-      <h3 className="mt-4 max-w-[22ch] font-[family-name:var(--iti-head)] text-[clamp(1.5rem,2.4vw,2rem)] leading-tight font-extrabold">{f.launchTitle[lang]}</h3>
+      <h3 className="mt-4 max-w-[22ch] font-[family-name:var(--iti-head)] text-[length:var(--iti-fs-h3)] leading-tight font-extrabold">{f.launchTitle[lang]}</h3>
       <ul className="mt-8">
         {INQUIRIES.map((q) => (
           <li key={q.id} className="border-t border-white/12 last:border-b">
@@ -1761,7 +1761,7 @@ function ContactInline({ lang }: { lang: Lang }) {
             <div className="flex items-start justify-between gap-6">
               <div>
                 <p className="iti-eyebrow">{f.launchEyebrow[lang]}</p>
-                <h3 className="mt-4 max-w-[24ch] font-[family-name:var(--iti-head)] text-[clamp(1.4rem,2.2vw,1.85rem)] leading-tight font-extrabold text-[var(--iti-navy)]">
+                <h3 className="mt-4 max-w-[24ch] font-[family-name:var(--iti-head)] text-[length:var(--iti-fs-h3)] leading-tight font-extrabold text-[var(--iti-navy)]">
                   {open ? f.drawerTitle[lang] : f.launchTitle[lang]}
                 </h3>
               </div>

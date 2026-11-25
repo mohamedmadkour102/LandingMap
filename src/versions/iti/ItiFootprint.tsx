@@ -947,7 +947,7 @@ export default function ItiFootprint({ lang }: Props) {
         <div className={docked ? 'flex items-end justify-between gap-4' : undefined}>
           <div>
             <p className="text-[0.7rem] font-semibold tracking-[0.18em] uppercase text-[var(--iti-copper-soft)]">{m.name[lang]}</p>
-            <p className={`mt-2 font-[family-name:var(--iti-head)] font-extrabold tracking-tight tabular-nums ${docked ? 'text-[2rem] leading-none' : 'text-4xl'}`} dir="ltr">
+            <p className={`mt-2 font-[family-name:var(--iti-head)] font-extrabold tracking-tight tabular-nums ${docked ? 'text-[1.85rem] leading-none' : 'text-[2rem] leading-tight'}`} dir="ltr">
               <MoneyCount value={m.investment} />
             </p>
           </div>
@@ -1034,7 +1034,7 @@ export default function ItiFootprint({ lang }: Props) {
         {/* ---------- LEFT: narrative ---------- */}
         <aside className="iti-map-panel iti-panel-scroll relative z-10 flex flex-col px-5 pt-20 pb-6 sm:px-8 lg:col-span-3 lg:overflow-y-auto lg:border-e lg:pt-[116px] lg:pb-10">
           <p className="iti-eyebrow iti-eyebrow-light">{t.eyebrow[lang]}</p>
-          <h2 id={`${uid}-title`} className="iti-h2 iti-h2-light mt-5">
+          <h2 id={`${uid}-title`} className="iti-h2 iti-h2-light iti-map-title mt-5">
             {t.title[lang]}
           </h2>
           <p className="mt-5 max-w-sm text-[0.95rem] leading-relaxed text-[var(--iti-fp-soft)]">{t.body[lang]}</p>

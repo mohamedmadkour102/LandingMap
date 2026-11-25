@@ -26,6 +26,34 @@ export const VARIANTS = {
       { id: 11, label: 'Duet' },
       { id: 12, label: 'Editorial' },
       { id: 13, label: 'Light' },
+      { id: 14, label: 'Plant & port' },
+      { id: 15, label: 'From Production to Global Reach' },
+      { id: 16, label: 'Industrial Precision & Connectivity' },
+      { id: 17, label: 'One Continuous Industrial Story' },
+    ],
+  },
+  /** Vision & Mission version 2 only: the ground the statements stand on */
+  ground: {
+    title: 'V&M 2 ground',
+    anchor: 'vision',
+    onlyWith: { key: 'purpose', id: 2 },
+    options: [
+      { id: 1, label: 'Mist Grey' },
+      { id: 2, label: 'Night' },
+    ],
+  },
+  /** Vision & Mission version 2 only: which pair of plants stands beside the statements. The pairs differ by ground (see MANIFESTO_SETS) */
+  plates: {
+    title: 'V&M 2 photos',
+    anchor: 'vision',
+    onlyWith: { key: 'purpose', id: 2 },
+    options: [
+      { id: 1, label: 'Pair 1' },
+      { id: 2, label: 'Pair 2' },
+      { id: 3, label: 'Pair 3' },
+      { id: 4, label: 'Pair 4' },
+      { id: 5, label: 'Pair 5' },
+      { id: 6, label: 'Pair 6' },
     ],
   },
   contact: {
@@ -76,6 +104,9 @@ export function VersionSwitcher() {
       </button>
       {(Object.keys(VARIANTS) as VariantKey[]).map((key) => {
         const group = VARIANTS[key]
+        // a group that belongs to one version of another section only shows while that version is up
+        const dep = 'onlyWith' in group ? group.onlyWith : null
+        if (dep && Number(params.get(dep.key)) !== dep.id) return null
         const asked = Number(params.get(key))
         const current = group.options.some((o) => o.id === asked) ? asked : 1
         return (

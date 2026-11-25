@@ -61,6 +61,17 @@ const PHOTOS = {
   'purpose-vision': `${LEGACY}/purpose-vision.jpg`,
   'purpose-vision-2': `${LEGACY}/purpose-vision-2.jpg`,
   'purpose-vision-3': `${LEGACY}/purpose-vision-3.jpg`,
+  // Vision & Mission, version 14 — two images supplied by the client on 2026-11-24 (a plant for the Mission, a port for the Vision)
+  'purpose-plant': `${LEGACY}/purpose-plant.webp`,
+  'purpose-port': `${LEGACY}/purpose-port.webp`,
+  // Vision & Mission, version 15 — supplied by the client on 2026-11-24. The silos are cut out by scripts/build-embeds.mjs (embed-silos)
+  'purpose-harbour': `${LEGACY}/purpose-harbour.webp`,
+  // Vision & Mission, version 16 — two aerial photographs supplied by the client on 2026-11-25 (a ring of silos, a ship at its berth)
+  'purpose-ring': `${LEGACY}/purpose-ring.webp`,
+  'purpose-berth': `${LEGACY}/purpose-berth.webp`,
+  // Vision & Mission, version 17 — two photographs supplied by the client on 2026-11-25 (a cement plant at dusk, a container port at night)
+  'purpose-works': `${LEGACY}/purpose-works.jpg`,
+  'purpose-terminal': `${LEGACY}/purpose-terminal.jpg`,
 
   // Still illustrative — no client photography supplied yet
   cimpor: `${LEGACY}/hero.jpg`,

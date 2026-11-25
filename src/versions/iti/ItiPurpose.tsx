@@ -1,8 +1,9 @@
-import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
-import { animate, motion, useMotionValue, useMotionValueEvent, useReducedMotion, useScroll, useSpring, useTransform, type MotionValue } from 'framer-motion'
+import { Fragment, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { animate, motion, useMotionValue, useMotionValueEvent, useReducedMotion, useScroll, useSpring, useTransform, type MotionStyle, type MotionValue } from 'framer-motion'
 import { COPY, type Lang } from './content'
 import { ICON_FRAME, ICON_SHAPES } from './ItiLogo'
 import { useVariant } from './variants'
+import embedAspect from './embedAspect.json'
 import { Reveal } from '../../components/Reveal'
 import { Picture } from './media'
 import { EASE_IN_OUT, EASE_OUT, SplitReveal, spotlight } from './fx'
@@ -126,7 +127,7 @@ function Block({
           />
         </div>
         <motion.p
-          className={`${manifesto ? 'mt-9 max-w-[56ch]' : 'mx-auto mt-7 max-w-[52ch]'} text-[clamp(1rem,1.3vw,1.18rem)] leading-[1.7] text-white/70`}
+          className={`${manifesto ? 'iti-manifesto-body mt-8 max-w-[40ch]' : 'mx-auto mt-7 max-w-[52ch]'} text-[length:var(--iti-fs-lead)] leading-[1.7] text-white/70`}
           style={still ? undefined : { opacity: bodyOpacity, y: bodyY }}
         >
           {s.body[lang]}
@@ -448,7 +449,75 @@ function StillPair({ lang, p, layout }: { lang: Lang; p: MotionValue<number>; la
   )
 }
 
-/* ---------- Version 2 — Manifesto: type alone on the night, the key words in copper ---------- */
+/* ---------- Version 2 — Manifesto: the statement on the night, and the plant it speaks of standing in the same night ---------- */
+/* The plants are not photographs placed on the page: they are cut out of their skies, in their own colours            */
+/* (scripts/build-embeds.mjs), so they have no frame and no edge — daylight beside the Mission, lamplight beside the   */
+/* Vision. They take the far side of the stage, where an enormous hollow numeral used to stand.                        */
+
+/**
+ * One plant on the stage. Every photograph is framed differently, so each brings its own placement:
+ *   h — its height, as a share of the stage (the box takes the picture's own shape);  w — the most width it may take;
+ *   x — how far it sits from the far edge (negative runs off it);
+ *   fade  — where its near edge starts and finishes dissolving towards the text. A plant whose own silhouette ends
+ *           inside the picture needs none ('0% 0%'); one that the picture cuts through needs a long one.
+ *   edge  — the picture cuts the plant at its far side, so on phones too it must sit against the screen's edge.
+ */
+type Plate = { k: string; w?: string; h?: string; x?: string; fade?: string; edge?: boolean }
+
+/**
+ * The pairs on offer (?plates=1…6): [beside the Mission, beside the Vision].
+ * On Mist Grey both are daylight: a whole plant at work for the Mission, a plant seen from below, looking up, for the Vision
+ * (a night photograph cannot be cut out of a black sky onto a light page). On the night ground it is day, then lamplight.
+ */
+const MANIFESTO_SETS: Record<'mist' | 'night', Record<number, [Plate, Plate]>> = {
+  mist: {
+    1: [
+      { k: 'embed-day-1', h: '76%', w: '62%', x: '1%', fade: '0% 0%' },
+      { k: 'embed-day-4', h: '84%', w: '60%', x: '-4%', fade: '4% 40%' },
+    ],
+    2: [
+      { k: 'embed-day-2', h: '82%', w: '64%', x: '-6%' },
+      { k: 'embed-day-3', h: '80%', w: '58%', x: '-4%', fade: '0% 0%' },
+    ],
+    3: [
+      { k: 'embed-day-5', h: '74%', w: '64%', x: '-5%', fade: '0% 26%' },
+      { k: 'embed-day-8', h: '84%', w: '60%', x: '-5%', fade: '0% 14%' },
+    ],
+    4: [
+      { k: 'embed-dusk-2', h: '80%', w: '74%', x: '-10%', fade: '8% 46%' },
+      { k: 'embed-day-6', h: '88%', w: '62%', x: '-6%', fade: '0% 20%' },
+    ],
+    5: [
+      { k: 'embed-day-7', h: '88%', w: '42%', x: '-2%', fade: '0% 0%', edge: true },
+      { k: 'embed-dusk-1', h: '78%', w: '70%', x: '-8%' },
+    ],
+    6: [
+      { k: 'embed-dusk-3', h: '70%', w: '78%', x: '-12%' },
+      { k: 'embed-day-10', h: '88%', w: '56%', x: '-6%', fade: '0% 34%' },
+    ],
+  },
+  night: {
+    1: [{ k: 'embed-day-1' }, { k: 'embed-night-1' }],
+    2: [{ k: 'embed-day-2' }, { k: 'embed-night-2' }],
+    3: [{ k: 'embed-day-5' }, { k: 'embed-night-3' }],
+    4: [{ k: 'embed-day-4' }, { k: 'embed-night-4' }],
+    5: [{ k: 'embed-day-3' }, { k: 'embed-night-6' }],
+    6: [{ k: 'embed-day-6' }, { k: 'embed-night-5' }],
+  },
+}
+
+function ManifestoPlate({ plate, style }: { plate: Plate; style?: Record<string, MotionValue<number> | number> }) {
+  const [f0, f1] = (plate.fade ?? '7% 48%').split(' ')
+  const pa = (embedAspect as Record<string, number>)[plate.k] ?? 1.5
+  const place = { '--pw': plate.w ?? '68%', '--ph': plate.h ?? '86%', '--px': plate.x ?? '-9%', '--pa': pa, '--pf0': f0, '--pf1': f1 } as unknown as MotionStyle
+  return (
+    <motion.div className={`iti-manifesto-plate ${plate.edge ? 'is-edge' : ''}`} style={{ ...place, ...style }} aria-hidden>
+      <div className="iti-manifesto-art">
+        <Picture k={plate.k} sizes="(min-width: 1024px) 66vw, 100vw" className="h-full w-full object-contain object-[right_bottom] max-lg:object-bottom" />
+      </div>
+    </motion.div>
+  )
+}
 
 const MANIFESTO = {
   mission: { fill: [0.02, 0.32], body: [0.28, 0.36], out: [0.44, 0.5] },
@@ -458,41 +527,44 @@ const MANIFESTO = {
 function PurposeManifesto({ lang }: { lang: Lang }) {
   const reduce = !!useReducedMotion()
   const { ref, p } = usePinned()
+  // the ground the statements stand on: Mist Grey (the client's choice) or the original night
+  const ground = useVariant('ground') === 2 ? 'night' : 'mist'
+  const set = useVariant('plates')
+  const [first, second] = MANIFESTO_SETS[ground][set] ?? MANIFESTO_SETS[ground][1]
+  const tone = ground === 'mist' ? 'is-mist' : ''
   const seam = useTransform(p, [0, 0.08], [1, 0])
   const progress = useTransform(p, [0.02, 0.88], [0, 1])
-  const n1 = useTransform(p, [0.44, 0.52], [1, 0])
-  const n2 = useTransform(p, [0.48, 0.56], [0, 1])
+  // the two plants change places with the two statements; each drifts a little as it is read
+  const day = useTransform(p, [0.42, 0.52], [1, 0])
+  const dayY = useTransform(p, [0, 0.52], [0, -26])
+  const night = useTransform(p, [0.46, 0.58], [0, 1])
+  const nightY = useTransform(p, [0.46, 1], [26, 0])
 
   if (reduce) {
     return (
-      <section id="vision" className="iti-purpose-story iti-manifesto relative isolate overflow-hidden py-28 text-white">
+      <section id="vision" className={`iti-purpose-story iti-manifesto relative isolate overflow-hidden py-28 text-white ${tone}`}>
+        <ManifestoPlate plate={second} />
         <StillPair lang={lang} p={p} layout="manifesto" />
       </section>
     )
   }
 
   return (
-    <section id="vision" ref={ref} className="iti-purpose-story relative h-[240svh] text-white" aria-label={`${COPY.mission.eyebrow[lang]} · ${COPY.vision.eyebrow[lang]}`}>
-      <div className="iti-manifesto sticky top-0 isolate h-[100svh] overflow-hidden">
+    <section id="vision" ref={ref} className={`iti-purpose-story relative h-[240svh] text-white ${tone}`} aria-label={`${COPY.mission.eyebrow[lang]} · ${COPY.vision.eyebrow[lang]}`}>
+      <div className={`iti-manifesto sticky top-0 isolate h-[100svh] overflow-hidden ${tone}`}>
         <motion.div className="iti-purpose-seam absolute inset-x-0 top-0 -z-10 h-28" style={{ opacity: seam }} />
         <div className="iti-purpose-foot absolute inset-x-0 bottom-0 -z-10 h-40" />
-        {/* the statement's number, enormous and hollow, on the far side */}
-        <div className="pointer-events-none absolute end-[3%] bottom-[17%] -z-10 hidden lg:block" aria-hidden>
-          <motion.span className="iti-manifesto-num absolute end-0 bottom-0" style={{ opacity: n1 }} dir="ltr">
-            01
-          </motion.span>
-          <motion.span className="iti-manifesto-num block" style={{ opacity: n2 }} dir="ltr">
-            02
-          </motion.span>
-        </div>
+        {/* the far side of the stage: the plant by day, then the plant under its lamps */}
+        <ManifestoPlate key={first.k} plate={first} style={{ opacity: day, y: dayY }} />
+        <ManifestoPlate key={second.k} plate={second} style={{ opacity: night, y: nightY }} />
 
-        <div className="absolute inset-0 flex items-center">
+        <div className="absolute inset-0 flex items-center max-lg:items-start max-lg:pt-[19svh]">
           <Pair lang={lang} p={p} beats={MANIFESTO} layout="manifesto" />
         </div>
 
         {/* a reading rule along the foot: it reports progress, it is not a control */}
         <div className="pointer-events-none absolute inset-x-0 bottom-[9%] mx-auto hidden max-w-[1400px] px-8 lg:block lg:ps-32" aria-hidden>
-          <div className="relative h-px bg-white/15">
+          <div className="iti-manifesto-rule relative h-px bg-white/15">
             <motion.span className="absolute inset-y-0 start-0 w-full origin-left bg-[var(--iti-copper-soft)] rtl:origin-right" style={{ scaleX: progress }} />
           </div>
           <div className="iti-purpose-label mt-3 flex justify-between">
@@ -703,7 +775,7 @@ function PurposeCorporate({ lang }: { lang: Lang }) {
           </Reveal>
           <SplitReveal text={t.title[lang]} emphasis={3} className="iti-h2 iti-corporate-title mt-5" />
           <Reveal delay={0.1}>
-            <p className="mx-auto mt-6 max-w-[52ch] text-[1.06rem] leading-[1.75] text-white/70 sm:text-[1.12rem]">{t.lead[lang]}</p>
+            <p className="mx-auto mt-6 max-w-[52ch] text-[length:var(--iti-fs-lead)] leading-[1.75] text-white/70">{t.lead[lang]}</p>
           </Reveal>
         </div>
 
@@ -730,7 +802,7 @@ function PurposeCorporate({ lang }: { lang: Lang }) {
                 <h3 className="mt-8 text-[0.74rem] font-bold tracking-[0.2em] text-[var(--iti-champagne)] uppercase rtl:text-[0.85rem] rtl:tracking-normal">
                   {s.eyebrow[lang]}
                 </h3>
-                <p className="mt-4 font-[family-name:var(--iti-head)] text-[clamp(1.45rem,2.2vw,1.95rem)] leading-[1.22] font-bold text-white">{s.headline[lang]}</p>
+                <p className="mt-4 font-[family-name:var(--iti-head)] text-[clamp(1.3rem,1.85vw,1.65rem)] leading-[1.25] font-bold text-white">{s.headline[lang]}</p>
                 <p className="mt-4 max-w-[48ch] text-[1rem] leading-[1.7] text-white/65">{s.body[lang]}</p>
                 {/* a copper rule that grows under the card in focus */}
                 <span className="iti-corporate-rule" aria-hidden />
@@ -935,7 +1007,7 @@ function CompassText({ lang, which, p, range, still }: { lang: Lang; which: Whic
       <div className="mt-5 lg:mt-7">
         <Statement text={s.headline[lang]} p={p} range={range} still={still} accent={s.accent[lang]} className="iti-compass-statement" />
       </div>
-      <p className="mt-5 max-w-[46ch] text-[clamp(0.98rem,1.25vw,1.16rem)] leading-[1.7] text-white/70 lg:mt-7">{s.body[lang]}</p>
+      <p className="mt-5 max-w-[46ch] text-[length:var(--iti-fs-lead)] leading-[1.7] text-white/70 lg:mt-7">{s.body[lang]}</p>
     </>
   )
 }
@@ -1063,7 +1135,7 @@ function PurposeDuet({ lang }: { lang: Lang }) {
             <SplitReveal text={t.title[lang]} emphasis={3} className="iti-h2 iti-corporate-title mt-5" />
           </div>
           <Reveal delay={0.1} className="lg:col-span-4 lg:col-start-9">
-            <p className="max-w-[42ch] text-[1.04rem] leading-[1.75] text-white/65 sm:text-[1.1rem]">{t.lead[lang]}</p>
+            <p className="max-w-[42ch] text-[length:var(--iti-fs-lead)] leading-[1.75] text-white/65">{t.lead[lang]}</p>
           </Reveal>
         </div>
 
@@ -1150,7 +1222,7 @@ function PurposeEditorial({ lang }: { lang: Lang }) {
                 <div className="lg:col-span-9">
                   <RiseStatement text={s.headline[lang]} accent={s.accent[lang]} className="iti-edit-statement" delay={0.1} />
                   <Reveal delay={0.3}>
-                    <p className="mt-8 max-w-[50ch] text-[clamp(1rem,1.25vw,1.16rem)] leading-[1.75] text-[var(--iti-ink-soft)] lg:mt-10">{s.body[lang]}</p>
+                    <p className="mt-8 max-w-[50ch] text-[length:var(--iti-fs-lead)] leading-[1.75] text-[var(--iti-ink-soft)] lg:mt-10">{s.body[lang]}</p>
                   </Reveal>
                 </div>
               </div>
@@ -1310,6 +1382,524 @@ function PurposeLight({ lang }: { lang: Lang }) {
   )
 }
 
+/* ---------- Version 14 — Plant & port: the Mission beside the plant, the Vision beside the port, one continuous night ---------- */
+/* Two photographs supplied by the client, in their own colours. Neither is framed: each runs off the far edge of the      */
+/* screen and dissolves into the section's navy towards the text, and the two overlap where one statement hands over       */
+/* to the other, so the section reads as one place rather than two rows.                                                   */
+/* Nothing is pinned. The page scrolls normally; what the scroll drives is small and in step: each photograph comes in     */
+/* from its own edge and settles, drifting a little slower than the page, while its statement fills word by word.          */
+/* A single copper line leaves the Mission, crosses the stage and arrives at the Vision.                                   */
+
+/** how far a band has come into the screen (0 as it arrives at the foot, 1 once it is well up), and its slow drift */
+function useBand() {
+  const ref = useRef<HTMLDivElement | null>(null)
+  const { scrollYProgress: enter } = useScroll({ target: ref, offset: ['start 0.92', 'start 0.18'] })
+  const { scrollYProgress: pass } = useScroll({ target: ref, offset: ['start end', 'end start'] })
+  return { ref, enter, pass }
+}
+
+function ReachPlate({
+  k,
+  side,
+  enter,
+  pass,
+  still,
+}: {
+  k: string
+  /** which edge of the screen the photograph runs off, in reading terms: the far edge (end) or the near one (start) */
+  side: 'start' | 'end'
+  enter: MotionValue<number>
+  pass: MotionValue<number>
+  still: boolean
+}) {
+  const el = useRef<HTMLDivElement | null>(null)
+  // the reveal is a mask, so it is handed to CSS as one number; a spring keeps it from following the wheel tick for tick
+  const open = useSpring(useTransform(enter, [0, 0.85], [0.08, 1]), { stiffness: 90, damping: 24, mass: 0.6 })
+  useMotionValueEvent(open, 'change', (v) => el.current?.style.setProperty('--rv', v.toFixed(4)))
+  useEffect(() => {
+    el.current?.style.setProperty('--rv', still ? '1' : open.get().toFixed(4))
+  }, [still, open])
+  const y = useTransform(pass, [0, 1], ['5%', '-5%'])
+  const scale = useTransform(enter, [0, 1], [1.09, 1])
+  return (
+    <div ref={el} className={`iti-reach-plate is-${side}`} aria-hidden>
+      <motion.div className="iti-reach-art" style={still ? undefined : { y, scale }}>
+        <Picture k={k} sizes="(min-width: 1024px) 70vw, 100vw" className="h-full w-full object-cover" />
+      </motion.div>
+    </div>
+  )
+}
+
+function ReachCopy({ lang, which, enter, still }: { lang: Lang; which: 'mission' | 'vision'; enter: MotionValue<number>; still: boolean }) {
+  const s = COPY[which]
+  const labelOpacity = useTransform(enter, [0.05, 0.3], [0, 1])
+  const labelY = useTransform(enter, [0.05, 0.3], [16, 0])
+  const bodyOpacity = useTransform(enter, [0.62, 0.88], [0, 1])
+  const bodyY = useTransform(enter, [0.62, 0.88], [16, 0])
+  return (
+    <>
+      <motion.h2 className="iti-eyebrow iti-eyebrow-light iti-purpose-eyebrow" style={still ? undefined : { opacity: labelOpacity, y: labelY }}>
+        <span dir="ltr">{which === 'mission' ? '01' : '02'}</span>
+        <span aria-hidden className="h-px w-6 bg-white/30" />
+        {s.eyebrow[lang]}
+      </motion.h2>
+      <div className="mt-7">
+        <Statement text={s.headline[lang]} p={enter} range={[0.2, 0.72]} still={still} accent={s.accent[lang]} className="iti-reach-statement" />
+      </div>
+      <motion.p className="iti-reach-body mt-7" style={still ? undefined : { opacity: bodyOpacity, y: bodyY }}>
+        {s.body[lang]}
+      </motion.p>
+    </>
+  )
+}
+
+function PurposeReach({ lang }: { lang: Lang }) {
+  const still = !!useReducedMotion()
+  const mission = useBand()
+  const vision = useBand()
+  // the line between the two: down from the Mission, across the stage, down to the Vision
+  const down = useTransform(mission.pass, [0.42, 0.62], [0, 1])
+  const across = useTransform(vision.enter, [0, 0.4], [0, 1])
+  const arrive = useTransform(vision.enter, [0.4, 0.7], [0, 1])
+  const line = (v: MotionValue<number>, axis: 'scaleX' | 'scaleY') => (still ? undefined : { [axis]: v })
+
+  return (
+    <section id="vision" className="iti-reach relative isolate overflow-hidden text-white" aria-label={`${COPY.mission.eyebrow[lang]} · ${COPY.vision.eyebrow[lang]}`}>
+      <div className="iti-purpose-seam absolute inset-x-0 top-0 z-10 h-28" />
+
+      {/* ---- 01 Mission: the statement at the reading edge, the plant running off the far edge ---- */}
+      <div ref={mission.ref} className="iti-reach-band">
+        <ReachPlate k="purpose-plant" side="end" enter={mission.enter} pass={mission.pass} still={still} />
+        <div className="iti-reach-grid">
+          <div className="iti-reach-copy lg:col-span-5">
+            <div className="max-lg:hidden flex-1" />
+            <ReachCopy lang={lang} which="mission" enter={mission.enter} still={still} />
+            <div className="relative flex-1 max-lg:hidden" aria-hidden>
+              <motion.span className="iti-reach-line absolute start-[7px] top-10 bottom-0 w-px origin-top" style={line(down, 'scaleY')} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ---- 02 Vision: the port running off the near edge, the statement on the far side ---- */}
+      <div ref={vision.ref} className="iti-reach-band is-second">
+        <ReachPlate k="purpose-port" side="start" enter={vision.enter} pass={vision.pass} still={still} />
+        <div className="iti-reach-grid">
+          {/* the line crosses the stage along the seam between the two */}
+          <div className="relative max-lg:hidden lg:col-span-7" aria-hidden>
+            <motion.span className="iti-reach-line absolute start-[7px] end-[-7px] top-0 h-px origin-left rtl:origin-right" style={line(across, 'scaleX')} />
+          </div>
+          <div className="iti-reach-copy lg:col-span-5">
+            <div className="relative flex-1 max-lg:hidden" aria-hidden>
+              <motion.span className="iti-reach-line absolute start-[7px] top-0 bottom-10 w-px origin-top" style={line(arrive, 'scaleY')} />
+            </div>
+            <ReachCopy lang={lang} which="vision" enter={vision.enter} still={still} />
+            <div className="max-lg:hidden flex-1" />
+          </div>
+        </div>
+      </div>
+      <Thread from="calc(100% - 5rem)" />
+    </section>
+  )
+}
+
+/* ---------- Version 15 — From Production to Global Reach ---------- */
+/* One stage, one story told in two shapes. The Mission stands beside the silos: a vertical, architectural mass cut out  */
+/* of its sky and built up out of the navy. The Vision opens beside the port: the same stage widening into a horizon.     */
+/* The change between them is a single mask. The port first appears in the tall slot the silos stood in, and that slot    */
+/* opens sideways and settles into a wide band — vertical becoming horizontal, production becoming reach.                 */
+/* The stage is held while this plays (the scroll is the timeline), and three depths drift at three speeds.              */
+
+/** a statement that arrives word by word, each word rising a little into place; driven by the scroll, not a clock */
+function ScrollRise({ text, accent, p, range, still, className }: { text: string; accent?: string; p: MotionValue<number>; range: Range; still: boolean; className: string }) {
+  const words = text.split(' ')
+  const hot = accentMask(text, accent)
+  const step = (range[1] - range[0]) / (words.length + 2)
+  return (
+    <p className={className}>
+      {words.map((w, i) => (
+        <Fragment key={i}>
+          {still ? (
+            <span className={hot[i] ? 'iti-purpose-accent' : undefined}>{w}</span>
+          ) : (
+            <RiseWord word={w} p={p} from={range[0] + i * step} to={range[0] + (i + 3) * step} className={hot[i] ? 'iti-purpose-accent' : undefined} />
+          )}
+          {i < words.length - 1 ? ' ' : ''}
+        </Fragment>
+      ))}
+    </p>
+  )
+}
+
+function RiseWord({ word, p, from, to, className }: { word: string; p: MotionValue<number>; from: number; to: number; className?: string }) {
+  const opacity = useTransform(p, [from, to], [0, 1])
+  const y = useTransform(p, [from, to], ['0.42em', '0em'])
+  return (
+    <motion.span className={`inline-block ${className ?? ''}`} style={{ opacity, y }}>
+      {word}
+    </motion.span>
+  )
+}
+
+function SpanCopy({
+  lang,
+  which,
+  p,
+  beats,
+  still,
+}: {
+  lang: Lang
+  which: 'mission' | 'vision'
+  p: MotionValue<number>
+  /** when the label, the statement and the supporting line arrive, as shares of the held scroll */
+  beats: { label: Range; words: Range; body: Range }
+  still: boolean
+}) {
+  const s = COPY[which]
+  const labelOpacity = useTransform(p, beats.label, [0, 1])
+  const labelY = useTransform(p, beats.label, [14, 0])
+  const bodyOpacity = useTransform(p, beats.body, [0, 1])
+  const bodyY = useTransform(p, beats.body, [14, 0])
+  return (
+    <>
+      <motion.h2 className="iti-eyebrow iti-eyebrow-light iti-purpose-eyebrow" style={still ? undefined : { opacity: labelOpacity, y: labelY }}>
+        <span dir="ltr">{which === 'mission' ? '01' : '02'}</span>
+        <span aria-hidden className="h-px w-6 bg-white/30" />
+        {s.eyebrow[lang]}
+      </motion.h2>
+      <div className="mt-7">
+        <ScrollRise text={s.headline[lang]} accent={s.accent[lang]} p={p} range={beats.words} still={still} className="iti-span-statement" />
+      </div>
+      <motion.p className="iti-span-body mt-7" style={still ? undefined : { opacity: bodyOpacity, y: bodyY }}>
+        {s.body[lang]}
+      </motion.p>
+    </>
+  )
+}
+
+/** the silos' own proportions, so their box hugs the cut-out (see scripts/build-embeds.mjs) */
+const SILOS_ASPECT = (embedAspect as Record<string, number>)['embed-silos'] ?? 1.17
+
+function PurposeSpan({ lang }: { lang: Lang }) {
+  const still = !!useReducedMotion()
+  const { ref, p } = usePinned()
+  // the silos are already going up as the stage scrolls into place, so it never arrives empty
+  const { scrollYProgress: arrive } = useScroll({ target: ref, offset: ['start 0.9', 'start 0.05'] })
+  const art = useRef<HTMLDivElement | null>(null)
+  const rise = useSpring(useTransform(arrive, [0, 1], [0, 1]), { stiffness: 80, damping: 24, mass: 0.7 })
+  const open = useSpring(useTransform(p, [0.42, 0.68], [0, 1]), { stiffness: 110, damping: 28, mass: 0.6 })
+  useMotionValueEvent(rise, 'change', (v) => art.current?.style.setProperty('--rv', v.toFixed(4)))
+  useMotionValueEvent(open, 'change', (v) => art.current?.style.setProperty('--op', v.toFixed(4)))
+
+  // three depths, three speeds: the ground light, the silos, the port
+  const glowY = useTransform(p, [0, 1], ['0%', '-10%'])
+  const silosY = useTransform(p, [0, 0.62], ['1.5%', '-3.5%'])
+  const silosOut = useTransform(p, [0.46, 0.6], [1, 0])
+  const silosScale = useTransform(p, [0.42, 0.62], [1, 1.05])
+  const portX = useTransform(p, [0.42, 1], ['3%', '-2%'])
+  const portScale = useTransform(p, [0.42, 0.74], [1.1, 1])
+  // the Mission leaves as the slot opens
+  const missionOut = useTransform(p, [0.4, 0.5], [1, 0])
+  const missionY = useTransform(p, [0.4, 0.5], [0, -28])
+
+  if (still) {
+    // reduced motion: nothing is held and nothing moves — the two statements one under the other, each beside its picture
+    return (
+      <section id="vision" className="iti-span is-still relative isolate overflow-hidden text-white" aria-label={`${COPY.mission.eyebrow[lang]} · ${COPY.vision.eyebrow[lang]}`}>
+        <div className="iti-purpose-seam absolute inset-x-0 top-0 z-10 h-28" />
+        <div className="iti-span-art" style={{ '--rv': 1, '--op': 0 } as unknown as CSSProperties} aria-hidden>
+          <div className="iti-span-silos" style={{ aspectRatio: SILOS_ASPECT }}>
+            <Picture k="embed-silos" sizes="60vw" className="h-full w-full object-contain object-[right_bottom]" />
+          </div>
+        </div>
+        <div className="iti-span-grid py-32">
+          <div className="lg:col-span-5">
+            <SpanCopy lang={lang} which="mission" p={p} beats={{ label: [0, 1], words: [0, 1], body: [0, 1] }} still />
+          </div>
+          <div className="mt-24 lg:col-span-5 lg:col-start-8 lg:mt-40">
+            <SpanCopy lang={lang} which="vision" p={p} beats={{ label: [0, 1], words: [0, 1], body: [0, 1] }} still />
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  return (
+    <section id="vision" ref={ref} className="iti-span-track relative h-[290svh] text-white" aria-label={`${COPY.mission.eyebrow[lang]} · ${COPY.vision.eyebrow[lang]}`}>
+      <div className="iti-span sticky top-0 isolate h-[100svh] overflow-hidden">
+        <div className="iti-purpose-seam absolute inset-x-0 top-0 z-10 h-28" />
+
+        {/* ---- the picture plane: drawn for a left-to-right page and mirrored whole for Arabic ---- */}
+        <div ref={art} className="iti-span-art" aria-hidden>
+          <motion.div className="iti-span-glow" style={{ y: glowY }} />
+          {/* the port: first seen through the slot the silos stood in, then opened into a horizon */}
+          <div className="iti-span-port">
+            <motion.div className="iti-span-port-art" style={{ x: portX, scale: portScale }}>
+              <Picture k="purpose-harbour" sizes="130vw" className="h-full w-full object-cover" />
+            </motion.div>
+          </div>
+          {/* the silos: cut from their sky, built up from the ground */}
+          <motion.div className="iti-span-silos" style={{ aspectRatio: SILOS_ASPECT, y: silosY, opacity: silosOut, scale: silosScale }}>
+            <Picture k="embed-silos" sizes="(min-width: 1024px) 60vw, 90vw" className="h-full w-full object-contain object-[right_bottom]" />
+          </motion.div>
+        </div>
+
+        {/* ---- the words: the Mission at the reading edge, the Vision on the far side ---- */}
+        <div className="iti-span-grid h-full">
+          <motion.div className="iti-span-copy lg:col-span-5" style={{ opacity: missionOut, y: missionY }}>
+            <SpanCopy lang={lang} which="mission" p={p} beats={{ label: [0, 0.06], words: [0.03, 0.24], body: [0.2, 0.3] }} still={false} />
+          </motion.div>
+          <div className="iti-span-copy is-second lg:col-span-5 lg:col-start-8">
+            <SpanCopy lang={lang} which="vision" p={p} beats={{ label: [0.6, 0.68], words: [0.64, 0.84], body: [0.8, 0.9] }} still={false} />
+          </div>
+        </div>
+        <Thread from="90%" />
+      </div>
+    </section>
+  )
+}
+
+/* ---------- Version 16 — Industrial Precision & Connectivity ---------- */
+/* Two aerial photographs, seen through three apertures. For the Mission the apertures are three upright bars, their     */
+/* tops cut along one line that climbs across them: silos, production, vertical. For the Vision the same three turn      */
+/* onto their sides and become three long strips, their ends cut along one line that runs away to the far edge: a berth, */
+/* a ship, reach. The cut is always the same angle — the slope of the roof in the Group's mark (ITI_SLOPE in the CSS) —  */
+/* so the shapes belong to the identity without drawing the mark itself.                                                 */
+/* Nothing here is decoration: there are no frames, lines or patterns, only the photograph, the navy between the         */
+/* apertures, and the type in the open ground they leave. The stage is held while the three apertures turn, one after    */
+/* the other, and each photograph eases back in scale as it settles.                                                     */
+
+/** one aperture's share of a 0 → 1 movement: each starts a little after the one before it */
+const stagger = (v: number, i: number, lag: number) => Math.max(0, Math.min(1, (v - i * lag) / (1 - 2 * lag)))
+
+function PrecisionPlane({ still, grow, turn, zoom }: { still?: { turn: 0 | 1 }; grow?: MotionValue<number>; turn?: MotionValue<number>; zoom?: MotionValue<number> }) {
+  const el = useRef<HTMLDivElement | null>(null)
+  const set = (name: string, v: number) => el.current?.style.setProperty(name, v.toFixed(4))
+  const write = (g: number, t: number, z: number) => {
+    for (let i = 0; i < 3; i++) {
+      set(`--g${i + 1}`, stagger(g, i, 0.16))
+      set(`--t${i + 1}`, stagger(t, i, 0.14))
+    }
+    set('--z', z)
+  }
+  useEffect(() => {
+    if (still) write(1, still.turn, 1)
+    else write(grow?.get() ?? 0, turn?.get() ?? 0, zoom?.get() ?? 0)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  const noop = useMotionValue(0)
+  useMotionValueEvent(grow ?? noop, 'change', (g) => !still && write(g, turn?.get() ?? 0, zoom?.get() ?? 0))
+  useMotionValueEvent(turn ?? noop, 'change', (t) => !still && write(grow?.get() ?? 1, t, zoom?.get() ?? 0))
+  useMotionValueEvent(zoom ?? noop, 'change', (z) => !still && write(grow?.get() ?? 1, turn?.get() ?? 0, z))
+  return (
+    <div ref={el} className="iti-prec-plane" aria-hidden>
+      {[1, 2, 3].map((n) => (
+        <div key={n} className={`iti-prec-aperture is-${n}`}>
+          {/* the berth lies under the silos in every aperture; the silos clear as that aperture turns */}
+          <div className="iti-prec-photo is-berth">
+            <Picture k="purpose-berth" sizes="(min-width: 1024px) 82vw, 130vw" className="h-full w-full object-cover" />
+          </div>
+          <div className="iti-prec-photo is-ring">
+            <Picture k="purpose-ring" sizes="(min-width: 1024px) 60vw, 110vw" className="h-full w-full object-cover" />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function PurposePrecision({ lang }: { lang: Lang }) {
+  const still = !!useReducedMotion()
+  const { ref, p } = usePinned()
+  // the bars are already rising as the stage scrolls into place
+  const { scrollYProgress: arrive } = useScroll({ target: ref, offset: ['start 0.85', 'start 0'] })
+  const grow = useSpring(arrive, { stiffness: 90, damping: 26, mass: 0.6 })
+  const turn = useSpring(useTransform(p, [0.4, 0.72], [0, 1]), { stiffness: 120, damping: 30, mass: 0.6 })
+  const zoom = useTransform(p, [0, 0.4, 0.42, 1], [0, 1, 0, 1])
+  const missionOut = useTransform(p, [0.38, 0.47], [1, 0])
+  const missionY = useTransform(p, [0.38, 0.47], [0, -24])
+  const label = `${COPY.mission.eyebrow[lang]} · ${COPY.vision.eyebrow[lang]}`
+
+  if (still) {
+    // reduced motion: nothing is held and nothing turns — each statement with its own three apertures, one under the other
+    return (
+      <section id="vision" className="iti-prec-track relative text-white" aria-label={label}>
+        <div className="iti-prec relative isolate h-[100svh] overflow-hidden">
+          <div className="iti-purpose-seam absolute inset-x-0 top-0 z-10 h-28" />
+          <PrecisionPlane still={{ turn: 0 }} />
+          <div className="iti-prec-grid h-full">
+            <div className="iti-prec-copy lg:col-span-5">
+              <SpanCopy lang={lang} which="mission" p={p} beats={{ label: [0, 1], words: [0, 1], body: [0, 1] }} still />
+            </div>
+          </div>
+        </div>
+        <div className="iti-prec relative isolate h-[100svh] overflow-hidden">
+          <PrecisionPlane still={{ turn: 1 }} />
+          <div className="iti-prec-grid h-full">
+            <div className="iti-prec-copy is-second lg:col-span-5 lg:col-start-8">
+              <SpanCopy lang={lang} which="vision" p={p} beats={{ label: [0, 1], words: [0, 1], body: [0, 1] }} still />
+            </div>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  return (
+    <section id="vision" ref={ref} className="iti-prec-track relative h-[290svh] text-white" aria-label={label}>
+      <div className="iti-prec sticky top-0 isolate h-[100svh] overflow-hidden">
+        <div className="iti-purpose-seam absolute inset-x-0 top-0 z-10 h-28" />
+        <PrecisionPlane grow={grow} turn={turn} zoom={zoom} />
+        <div className="iti-prec-grid h-full">
+          <motion.div className="iti-prec-copy lg:col-span-5" style={{ opacity: missionOut, y: missionY }}>
+            <SpanCopy lang={lang} which="mission" p={p} beats={{ label: [0, 0.06], words: [0.03, 0.24], body: [0.2, 0.3] }} still={false} />
+          </motion.div>
+          <div className="iti-prec-copy is-second lg:col-span-5 lg:col-start-8">
+            <SpanCopy lang={lang} which="vision" p={p} beats={{ label: [0.64, 0.72], words: [0.68, 0.87], body: [0.84, 0.93] }} still={false} />
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/* ---------- Version 17 — One Continuous Industrial Story ---------- */
+/* One held frame, two shots, cut like a film. It opens on the plant at dusk, standing in the far two thirds of the      */
+/* frame with the Mission set against the navy beside it. As the page is scrolled the camera keeps pushing in and        */
+/* begins to travel; a soft-edged wipe crosses the frame in the same direction and the port comes through it, pulling    */
+/* back until it runs edge to edge. The Vision is set where the Mission stood, on the open water.                        */
+/* Both photographs share the same hour — blue sky, sodium light — which is what lets one dissolve into the other.       */
+/* The scroll is the only clock: nothing plays on its own, and the frame is held for little more than one screen.        */
+/* Below desktop width, and for anyone who asks for reduced motion, nothing is held: the two statements are set one      */
+/* under the other, each with its photograph.                                                                            */
+
+const STORY_SHOTS = {
+  works: { k: 'purpose-works', sizes: '(min-width: 1024px) 82vw, 190vw' },
+  terminal: { k: 'purpose-terminal', sizes: '(min-width: 1024px) 100vw, 200vw' },
+} as const
+
+function useMatch(query: string) {
+  const [on, setOn] = useState(() => typeof window !== 'undefined' && window.matchMedia(query).matches)
+  useEffect(() => {
+    const m = window.matchMedia(query)
+    const sync = () => setOn(m.matches)
+    sync()
+    m.addEventListener('change', sync)
+    return () => m.removeEventListener('change', sync)
+  }, [query])
+  return on
+}
+
+/** one shot: the frame it is seen through (which blends its edges into the navy) and the camera inside it */
+function StoryShot({ which, style, cam }: { which: keyof typeof STORY_SHOTS; style?: MotionStyle; cam?: MotionStyle }) {
+  const shot = STORY_SHOTS[which]
+  return (
+    <motion.div className={`iti-story-shot is-${which}`} style={style}>
+      <motion.div className="iti-story-cam" style={cam}>
+        <Picture k={shot.k} sizes={shot.sizes} className="h-full w-full object-cover" />
+      </motion.div>
+    </motion.div>
+  )
+}
+
+const STORY_SET = { label: [0, 1], words: [0, 1], body: [0, 1] }
+
+/** the film: desktop, motion allowed */
+function StoryFilm({ lang }: { lang: Lang }) {
+  const { ref, p } = usePinned()
+  // the opening shot and the Mission come up while the frame is still scrolling into place, so it never arrives empty
+  const { scrollYProgress: arrive } = useScroll({ target: ref, offset: ['start 0.85', 'start 0.1'] })
+  // one eased reading of the scroll drives picture and type alike, so they cannot drift apart
+  const film = useSpring(p, { stiffness: 140, damping: 32, mass: 0.5 })
+  const plane = useRef<HTMLDivElement | null>(null)
+  const wipe = useTransform(film, [0.28, 0.62], [0, 1])
+  useMotionValueEvent(wipe, 'change', (v) => plane.current?.style.setProperty('--wipe', v.toFixed(4)))
+  useEffect(() => {
+    plane.current?.style.setProperty('--wipe', wipe.get().toFixed(4))
+  }, [wipe])
+
+  // the plant: a slow push-in from the moment it appears, then the camera starts to travel
+  const worksIn = useTransform(arrive, [0.05, 0.7], [0, 1])
+  const worksOut = useTransform(film, [0.46, 0.62], [1, 0])
+  const worksOpacity = useTransform([worksIn, worksOut], ([a, b]: number[]) => Math.min(a, b))
+  const worksScale = useTransform([arrive, film], ([a, f]: number[]) => 1 + 0.035 * a + 0.085 * Math.min(1, f / 0.62))
+  const worksX = useTransform(film, [0.28, 0.62], ['0%', '-4%'])
+  const worksY = useTransform(arrive, [0, 1], ['3%', '0%'])
+  // the port: arrives still travelling the same way, and keeps pulling back to the end
+  const portX = useTransform(film, [0.28, 0.72], ['5%', '0%'])
+  const portScale = useTransform(film, [0.28, 1], [1.13, 1.02])
+  // the words sit nearer than the picture: they drift a little on their own, and the Mission leaves ahead of the wipe
+  const missionOpacity = useTransform(film, [0.34, 0.44], [1, 0])
+  const missionY = useTransform(film, [0, 0.34, 0.44], [0, -10, -34])
+  const reelA = useTransform(film, [0, 0.45], [0, 1])
+  const reelB = useTransform(film, [0.45, 0.96], [0, 1])
+
+  return (
+    <section id="vision" ref={ref} className="iti-story-track relative h-[240svh] text-white" aria-label={`${COPY.mission.eyebrow[lang]} · ${COPY.vision.eyebrow[lang]}`}>
+      <div className="iti-story sticky top-0 isolate h-[100svh] overflow-hidden">
+        <div className="iti-purpose-seam absolute inset-x-0 top-0 z-10 h-28" />
+
+        {/* ---- the picture plane: laid out for a left-to-right page and mirrored whole for Arabic ---- */}
+        <div ref={plane} className="iti-story-plane" aria-hidden>
+          <StoryShot which="works" style={{ opacity: worksOpacity }} cam={{ scale: worksScale, x: worksX, y: worksY }} />
+          <div className="iti-story-wipe">
+            <StoryShot which="terminal" cam={{ scale: portScale, x: portX }} />
+          </div>
+          <div className="iti-story-veil" />
+        </div>
+
+        {/* ---- the words: one place in the frame, the Vision taking over where the Mission stood ---- */}
+        <div className="iti-story-grid h-full">
+          <motion.div className="iti-story-copy" style={{ opacity: missionOpacity, y: missionY }}>
+            <SpanCopy lang={lang} which="mission" p={arrive} beats={{ label: [0.36, 0.56], words: [0.46, 0.94], body: [0.84, 1] }} still={false} />
+          </motion.div>
+          <div className="iti-story-copy">
+            <SpanCopy lang={lang} which="vision" p={film} beats={{ label: [0.52, 0.6], words: [0.56, 0.78], body: [0.74, 0.84] }} still={false} />
+          </div>
+          {/* where we are in the film: two short hairlines, the copper filling as it plays */}
+          <div className="iti-story-reel" aria-hidden>
+            <span>
+              <motion.i style={{ scaleX: reelA }} />
+            </span>
+            <span>
+              <motion.i style={{ scaleX: reelB }} />
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/** the same story with nothing held: phones, tablets, short windows and reduced motion */
+function StoryFlat({ lang, still }: { lang: Lang; still: boolean }) {
+  const p = useMotionValue(1)
+  return (
+    <section id="vision" className="iti-story is-flat relative isolate overflow-hidden text-white" aria-label={`${COPY.mission.eyebrow[lang]} · ${COPY.vision.eyebrow[lang]}`}>
+      <div className="iti-purpose-seam absolute inset-x-0 top-0 z-10 h-28" />
+      {PAIR.map((which) => {
+        const copy = <SpanCopy lang={lang} which={which} p={p} beats={STORY_SET} still />
+        return (
+          <div key={which} className={`iti-story-scene is-${which}`}>
+            <div className="iti-story-grid">{still ? <div className="iti-story-copy">{copy}</div> : <Reveal className="iti-story-copy">{copy}</Reveal>}</div>
+            <div className="iti-story-plane" aria-hidden>
+              <StoryShot which={which === 'mission' ? 'works' : 'terminal'} />
+              <div className="iti-story-veil" />
+            </div>
+          </div>
+        )
+      })}
+    </section>
+  )
+}
+
+function PurposeStory({ lang }: { lang: Lang }) {
+  const still = !!useReducedMotion()
+  // the frame is only held where there is room for it: a desktop-width window that is not too short
+  const roomy = useMatch('(min-width: 1024px) and (min-height: 560px)')
+  return roomy && !still ? <StoryFilm lang={lang} /> : <StoryFlat lang={lang} still={still} />
+}
+
 /** Vision & Mission — the version comes from the address (?purpose=N); 1 is the current design.
  *  Numbers are stable: a version that is dropped keeps its number retired (3, 6, 7, 8, 9), so "version 5" always means the same design. */
 export function ItiVision({ lang }: { lang: Lang }) {
@@ -1321,5 +1911,9 @@ export function ItiVision({ lang }: { lang: Lang }) {
   if (v === 11) return <PurposeDuet lang={lang} />
   if (v === 12) return <PurposeEditorial lang={lang} />
   if (v === 13) return <PurposeLight lang={lang} />
+  if (v === 14) return <PurposeReach lang={lang} />
+  if (v === 15) return <PurposeSpan lang={lang} />
+  if (v === 16) return <PurposePrecision lang={lang} />
+  if (v === 17) return <PurposeStory lang={lang} />
   return <PurposeHorizon lang={lang} />
 }

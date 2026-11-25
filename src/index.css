@@ -266,6 +266,12 @@ button {
   --iti-ribbon-floor: color-mix(in oklab, var(--iti-navy) 80%, #000);
   --iti-head: 'Schibsted Grotesk', system-ui, sans-serif;
   --iti-body: 'Figtree', system-ui, sans-serif;
+  /* Type scale. The client found the first sizes too large across the page, so headings sit at a reading scale:
+     one size for every section title, one for the hero, one for the paragraph that follows a title. */
+  --iti-fs-hero: clamp(2.35rem, 5vw, 4.5rem);
+  --iti-fs-h2: clamp(1.75rem, 2.9vw, 2.6rem);
+  --iti-fs-h3: clamp(1.3rem, 1.8vw, 1.6rem);
+  --iti-fs-lead: clamp(1rem, 1.15vw, 1.06rem);
   color-scheme: light;
   font-family: var(--iti-body);
   background: #ffffff;
@@ -326,10 +332,19 @@ button {
 .iti-h2 {
   font-family: var(--iti-head);
   font-weight: 800;
-  font-size: clamp(1.9rem, 3.2vw, 2.9rem);
+  font-size: var(--iti-fs-h2);
   line-height: 1.08;
   letter-spacing: -0.02em;
   color: var(--iti-navy);
+}
+/* titles break into even lines, so a smaller size never strands one word on a line of its own */
+.iti-h2,
+.iti-about-title,
+.iti-values-title,
+.iti-biz-title,
+.iti-contact-title,
+.iti-corporate-title {
+  text-wrap: balance;
 }
 .iti-display {
   font-family: var(--iti-head);
@@ -490,6 +505,13 @@ button {
 }
 .iti-h2-light {
   color: #ffffff;
+}
+/* the map's title lives in a quarter-width side panel on desktop: a step down keeps it to two or three lines */
+@media (min-width: 1024px) {
+  .iti-map-title {
+    font-size: clamp(1.6rem, 2.15vw, 2rem);
+    line-height: 1.14;
+  }
 }
 
 /* Side panels float over the full-bleed globe */
@@ -855,7 +877,7 @@ button {
 
 /* About — the display headline gets room to breathe */
 .iti-about-title {
-  font-size: clamp(2rem, 3.5vw, 3.1rem);
+  font-size: var(--iti-fs-h2);
   line-height: 1.14;
   letter-spacing: -0.015em;
 }
@@ -937,7 +959,7 @@ button {
 .iti-purpose-statement {
   font-family: var(--iti-head);
   font-weight: 700;
-  font-size: clamp(1.95rem, 4.6vw, 4.1rem);
+  font-size: clamp(1.8rem, 3.4vw, 3.05rem);
   line-height: 1.12;
   letter-spacing: -0.02em;
   text-wrap: balance;
@@ -993,33 +1015,116 @@ button {
     linear-gradient(180deg, #042a42 0%, #031f33 100%);
 }
 .iti-manifesto-statement {
-  max-width: 15ch;
+  max-width: 19ch;
   font-family: var(--iti-head);
   font-weight: 800;
-  font-size: clamp(2.4rem, 6.2vw, 6rem);
-  line-height: 1.02;
-  letter-spacing: -0.035em;
+  /* brought down from poster size: the plant beside it now carries the scale */
+  font-size: clamp(1.75rem, 3.2vw, 2.9rem);
+  line-height: 1.06;
+  letter-spacing: -0.03em;
   text-wrap: balance;
   color: #fff;
 }
 .iti-root[dir='rtl'] .iti-manifesto-statement {
-  max-width: 17ch;
-  line-height: 1.3;
+  max-width: 21ch;
+  line-height: 1.35;
   letter-spacing: 0;
 }
-.iti-manifesto-num {
-  font-family: var(--iti-head);
-  font-weight: 800;
-  font-size: clamp(10rem, 22vw, 20rem);
-  line-height: 0.8;
-  letter-spacing: -0.05em;
-  color: transparent;
-  -webkit-text-stroke: 1.2px rgb(255 255 255 / 0.12);
+/* The plant: no frame. It stands on the stage's floor at the far side and its edges go out into the night.
+   The art is drawn for a left-to-right page (plant on the right, fading towards the text) and mirrored for Arabic. */
+.iti-manifesto-plate {
+  position: absolute;
+  inset-inline-end: var(--px, -9%);
+  bottom: 0;
+  z-index: -5;
+  /* the box takes the picture's own shape, so the fades below are measured on the plant itself, not on empty box */
+  height: var(--ph, 86%);
+  aspect-ratio: var(--pa, 1.5);
+  max-width: var(--pw, 68%);
+  pointer-events: none;
+}
+.iti-manifesto-art {
+  width: 100%;
+  height: 100%;
+  -webkit-mask-image: linear-gradient(to right, transparent var(--pf0, 7%), #000 var(--pf1, 48%)), linear-gradient(to top, transparent 2%, #000 24%), linear-gradient(to bottom, transparent 0, #000 14%);
+  -webkit-mask-composite: source-in, source-in;
+  mask-image: linear-gradient(to right, transparent var(--pf0, 7%), #000 var(--pf1, 48%)), linear-gradient(to top, transparent 2%, #000 24%), linear-gradient(to bottom, transparent 0, #000 14%);
+  mask-composite: intersect, intersect;
+}
+.iti-root[dir='rtl'] .iti-manifesto-art {
+  transform: scaleX(-1);
+}
+/* ---- the same stage on Mist Grey: navy ink, the deeper copper, and the plant rising out of the mist ---- */
+.iti-purpose-story.is-mist {
+  background: var(--iti-mist);
+}
+.iti-manifesto.is-mist {
+  color: var(--iti-navy);
+  background:
+    radial-gradient(46% 56% at 74% 64%, rgb(255 255 255 / 0.62), transparent 74%),
+    linear-gradient(180deg, var(--iti-tone-mist) 0, var(--iti-mist) 9rem);
+}
+.iti-manifesto.is-mist .iti-purpose-seam,
+.iti-manifesto.is-mist .iti-purpose-foot {
+  display: none;
+}
+.iti-manifesto.is-mist .iti-manifesto-statement {
+  color: var(--iti-navy);
+}
+.iti-manifesto.is-mist .iti-purpose-accent {
+  background: linear-gradient(100deg, #c27448 0%, #a9613a 60%, #7d4426 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+.iti-manifesto.is-mist .iti-manifesto-body {
+  color: var(--iti-ink-soft);
+}
+.iti-manifesto.is-mist .iti-eyebrow-light {
+  color: var(--iti-steel);
+}
+.iti-manifesto.is-mist .iti-purpose-eyebrow > span[aria-hidden] {
+  background: rgb(5 53 82 / 0.3);
+}
+.iti-manifesto.is-mist .iti-manifesto-rule {
+  background: rgb(5 53 82 / 0.16);
+}
+.iti-manifesto.is-mist .iti-purpose-label {
+  color: rgb(5 53 82 / 0.6);
+}
+.iti-manifesto.is-mist .iti-purpose-thread {
+  background: linear-gradient(180deg, rgb(5 53 82 / 0.18), rgb(169 97 58 / 0.6));
+}
+/* phones: the plant stands along the foot of the screen, under the statement */
+@media (max-width: 1023px) {
+  .iti-manifesto-plate {
+    inset-inline: -18% -18%;
+    width: auto;
+    max-width: none;
+    height: 46%;
+    aspect-ratio: auto;
+  }
+  .iti-manifesto.is-mist .iti-manifesto-art {
+    opacity: 1;
+  }
+  /* a plant its picture cuts at the far side stays against the screen's edge */
+  .iti-manifesto-plate.is-edge {
+    inset-inline: 10% 0;
+  }
+  .iti-manifesto-plate.is-edge img {
+    object-position: right bottom;
+  }
+  .iti-manifesto-art {
+    opacity: 0.8;
+    -webkit-mask-image: linear-gradient(to top, transparent 0, #000 22%, #000 62%, transparent 100%);
+    mask-image: linear-gradient(to top, transparent 0, #000 22%, #000 62%, transparent 100%);
+    -webkit-mask-composite: source-over;
+    mask-composite: add;
+  }
 }
 .iti-arrow-statement {
   font-family: var(--iti-head);
   font-weight: 700;
-  font-size: clamp(1.55rem, 2.35vw, 2.3rem);
+  font-size: clamp(1.45rem, 2.1vw, 2rem);
   line-height: 1.14;
   letter-spacing: -0.02em;
   text-wrap: balance;
@@ -1071,7 +1176,7 @@ button {
   background-clip: text;
 }
 .iti-corporate-title {
-  font-size: clamp(2.1rem, 4vw, 3.4rem);
+  font-size: var(--iti-fs-h2);
   line-height: 1.1;
 }
 .iti-root[dir='rtl'] .iti-corporate-title {
@@ -1138,6 +1243,657 @@ button {
   background: var(--iti-grad-copper);
   -webkit-background-clip: text;
   background-clip: text;
+}
+
+/* ---------- 14 — Plant & port: two statements, two photographs, one night ---------- */
+.iti-reach {
+  background: linear-gradient(180deg, #042a42 0%, #03243a 46%, #031f33 100%);
+}
+.iti-reach-band {
+  position: relative;
+}
+/* the text sits on the page's own grid; the photograph does not */
+.iti-reach-grid {
+  position: relative;
+  z-index: 2;
+  margin-inline: auto;
+  max-width: 1400px;
+  padding-inline: 1.25rem;
+}
+.iti-reach-copy {
+  display: flex;
+  flex-direction: column;
+}
+.iti-reach-statement {
+  max-width: 17ch;
+  font-family: var(--iti-head);
+  font-weight: 800;
+  font-size: clamp(1.75rem, 3vw, 2.75rem);
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+  color: #fff;
+}
+.iti-root[dir='rtl'] .iti-reach-statement {
+  max-width: 19ch;
+  line-height: 1.38;
+  letter-spacing: 0;
+}
+.iti-reach-body {
+  max-width: 40ch;
+  font-size: var(--iti-fs-lead);
+  line-height: 1.7;
+  color: rgb(255 255 255 / 0.72);
+}
+.iti-reach-line {
+  background: linear-gradient(180deg, rgb(212 137 95 / 0.75), rgb(212 137 95 / 0.4));
+}
+
+/* The photograph. No frame: it runs off one edge of the screen and goes out into the navy on every other side.
+   --rv (0 → 1, set from ItiPurpose.tsx as the band scrolls in) is how far it has come in from its own edge. */
+.iti-reach-plate {
+  --rv: 1;
+  position: relative;
+  z-index: 1;
+  height: 62vw;
+  max-height: 26rem;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 16%, #000 calc(var(--rv) * 62%), transparent calc(var(--rv) * 100%));
+  mask-image: linear-gradient(to bottom, transparent 0, #000 16%, #000 calc(var(--rv) * 62%), transparent calc(var(--rv) * 100%));
+}
+.iti-reach-art {
+  width: 100%;
+  height: 100%;
+  will-change: transform;
+}
+/* phones: the photograph first, the statement rising into its lower edge */
+@media (max-width: 1023px) {
+  .iti-reach-band {
+    padding-bottom: 4.5rem;
+  }
+  .iti-reach-band:first-of-type {
+    padding-top: 3.5rem;
+  }
+  .iti-reach-copy {
+    margin-top: -2.25rem;
+  }
+  /* each photograph keeps its subject: the plant stands in the right of its frame, the port in the left */
+  .iti-reach-plate.is-end img {
+    object-position: 78% 50%;
+  }
+  .iti-reach-plate.is-start img {
+    object-position: 30% 50%;
+  }
+}
+@media (min-width: 640px) {
+  .iti-reach-grid {
+    padding-inline: 2rem;
+  }
+}
+@media (min-width: 1024px) {
+  .iti-reach-band {
+    min-height: 92svh;
+  }
+  .iti-reach-band.is-second {
+    min-height: 88svh;
+  }
+  /* the port's story is in the left half of its frame: silos, conveyor, cranes, the ship's bow */
+  .iti-reach-plate.is-start img {
+    object-position: 38% 50%;
+  }
+  .iti-reach-plate.is-end img {
+    object-position: 70% 50%;
+  }
+  .iti-reach-grid {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: 2rem;
+    min-height: inherit;
+  }
+  .iti-reach-copy {
+    padding-block: 0;
+  }
+  /* the plate leaves the grid: it is pinned to its edge of the screen and reaches past its own band, so the two overlap */
+  .iti-reach-plate {
+    position: absolute;
+    top: -4%;
+    bottom: -16%;
+    height: auto;
+    max-height: none;
+  }
+  .iti-reach-plate.is-end {
+    inset-inline-end: 0;
+    width: 68%;
+    /* in from the right edge, out towards the text on the left */
+    -webkit-mask-image:
+      linear-gradient(to left, #000 calc(var(--rv) * 46%), transparent calc(var(--rv) * 96%)),
+      linear-gradient(to bottom, transparent 2%, #000 24%, #000 66%, transparent 97%);
+    -webkit-mask-composite: source-in;
+    mask-image:
+      linear-gradient(to left, #000 calc(var(--rv) * 46%), transparent calc(var(--rv) * 96%)),
+      linear-gradient(to bottom, transparent 2%, #000 24%, #000 66%, transparent 97%);
+    mask-composite: intersect;
+  }
+  .iti-reach-plate.is-start {
+    top: -14%;
+    bottom: -2%;
+    inset-inline-start: 0;
+    width: 70%;
+    -webkit-mask-image:
+      linear-gradient(to right, #000 calc(var(--rv) * 48%), transparent calc(var(--rv) * 97%)),
+      linear-gradient(to bottom, transparent 3%, #000 30%, #000 70%, transparent 96%);
+    -webkit-mask-composite: source-in;
+    mask-image:
+      linear-gradient(to right, #000 calc(var(--rv) * 48%), transparent calc(var(--rv) * 97%)),
+      linear-gradient(to bottom, transparent 3%, #000 30%, #000 70%, transparent 96%);
+    mask-composite: intersect;
+  }
+  /* Arabic: the page is mirrored, so the photographs are too — each keeps its subject at the edge it runs off */
+  .iti-root[dir='rtl'] .iti-reach-plate {
+    transform: scaleX(-1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .iti-reach-plate {
+    --rv: 1 !important;
+  }
+}
+
+/* ---------- 15 — From Production to Global Reach: silos, then the horizon ---------- */
+.iti-span-track {
+  background: #031f33;
+}
+.iti-span {
+  background: linear-gradient(180deg, #042a42 0%, #03243a 50%, #031f33 100%);
+}
+.iti-span-grid {
+  position: relative;
+  z-index: 2;
+  margin-inline: auto;
+  max-width: 1400px;
+  padding-inline: 1.25rem;
+}
+.iti-span-statement {
+  max-width: 17ch;
+  font-family: var(--iti-head);
+  font-weight: 800;
+  font-size: clamp(1.75rem, 3vw, 2.75rem);
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+  color: #fff;
+}
+.iti-root[dir='rtl'] .iti-span-statement {
+  max-width: 19ch;
+  line-height: 1.38;
+  letter-spacing: 0;
+}
+.iti-span-body {
+  max-width: 40ch;
+  font-size: var(--iti-fs-lead);
+  line-height: 1.7;
+  color: rgb(255 255 255 / 0.74);
+}
+
+/* The picture plane. --rv: how far the silos have been built up (0 → 1). --op: how far the slot has opened (0 → 1).
+   Everything below is laid out for a left-to-right page; Arabic mirrors the whole plane. */
+.iti-span-art {
+  --rv: 0;
+  --op: 0;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+.iti-root[dir='rtl'] .iti-span-art {
+  transform: scaleX(-1);
+}
+/* the ground light: the one soft thing on the stage, behind everything, moving slowest */
+.iti-span-glow {
+  position: absolute;
+  inset: -10% 0;
+  background: radial-gradient(48% 56% at 74% 62%, rgb(33 92 126 / 0.34), transparent 72%);
+}
+/* the silos: no frame. Their own outline is the edge; the bottom goes out into the floor, and --rv raises them from it */
+.iti-span-silos {
+  position: absolute;
+  right: 3%;
+  bottom: 0;
+  height: 54%;
+  max-width: 88%;
+  transform-origin: 70% 100%;
+  -webkit-mask-image:
+    linear-gradient(to top, transparent 0, #000 18%), linear-gradient(to right, transparent 0, #000 12%),
+    linear-gradient(to top, #000 calc(var(--rv) * 104% - 4%), transparent calc(var(--rv) * 118%));
+  -webkit-mask-composite: source-in, source-in;
+  mask-image:
+    linear-gradient(to top, transparent 0, #000 18%), linear-gradient(to right, transparent 0, #000 12%),
+    linear-gradient(to top, #000 calc(var(--rv) * 104% - 4%), transparent calc(var(--rv) * 118%));
+  mask-composite: intersect, intersect;
+}
+/* The port, seen through a window with soft edges. The window's four sides are each a blend, by --op, between the tall
+   slot the silos stood in (0) and the wide band of the horizon (1). The --a values are the slot, the --b values the band. */
+.iti-span-port {
+  --l: calc(var(--la) * (1 - var(--op)) + var(--lb) * var(--op));
+  --r: calc(var(--ra) * (1 - var(--op)) + var(--rb) * var(--op));
+  --t: calc(var(--ta) * (1 - var(--op)) + var(--tb) * var(--op));
+  --b: calc(var(--ba) * (1 - var(--op)) + var(--bb) * var(--op));
+  /* how soft each side is, growing as it opens: a slot has edges, a horizon has none */
+  --fx: calc(7% + var(--op) * var(--fxb));
+  --fy: calc(7% + var(--op) * var(--fyb));
+  /* phones: the slot at the foot of the screen, opening across its whole width */
+  --la: 46%;
+  --lb: -4%;
+  --ra: 98%;
+  --rb: 104%;
+  --ta: 48%;
+  --tb: 50%;
+  --ba: 99%;
+  --bb: 100%;
+  --fxb: 0%;
+  --fyb: 12%;
+  position: absolute;
+  inset: 0;
+  opacity: clamp(0, calc(var(--op) * 3.2), 1);
+  -webkit-mask-image:
+    linear-gradient(to right, transparent var(--l), #000 calc(var(--l) + var(--fx)), #000 calc(var(--r) - var(--fx) * 2.4), transparent var(--r)),
+    linear-gradient(to bottom, transparent var(--t), #000 calc(var(--t) + var(--fy)), #000 calc(var(--b) - var(--fy)), transparent var(--b));
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(to right, transparent var(--l), #000 calc(var(--l) + var(--fx)), #000 calc(var(--r) - var(--fx) * 2.4), transparent var(--r)),
+    linear-gradient(to bottom, transparent var(--t), #000 calc(var(--t) + var(--fy)), #000 calc(var(--b) - var(--fy)), transparent var(--b));
+  mask-composite: intersect;
+}
+.iti-span-port-art {
+  position: absolute;
+  inset: 44% -6% 0 -6%;
+  will-change: transform;
+}
+
+/* phones: the words in the upper half, the picture plane in the lower */
+@media (max-width: 1023px) {
+  .iti-span-grid {
+    padding-top: 17svh;
+  }
+  .iti-span-copy.is-second {
+    position: absolute;
+    inset-inline: 1.25rem;
+    top: 17svh;
+  }
+}
+@media (min-width: 640px) {
+  .iti-span-grid {
+    padding-inline: 2rem;
+  }
+}
+@media (min-width: 1024px) {
+  .iti-span-grid {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: 2rem;
+    align-items: center;
+  }
+  .iti-span-silos {
+    right: 2%;
+    height: 88%;
+    max-width: 62%;
+  }
+  /* the slot stands where the silos stood; opened, it is the whole width of the stage and its lower half —
+     a horizon. The Vision is set above it, on the far side, in clear navy */
+  .iti-span-port {
+    --la: 56%;
+    --lb: -4%;
+    --ra: 97%;
+    --rb: 104%;
+    --ta: 9%;
+    --tb: 37%;
+    --ba: 99%;
+    --bb: 100%;
+    --fxb: 0%;
+    --fyb: 15%;
+  }
+  .iti-span-port-art {
+    inset: 8% -4% -4% -4%;
+  }
+  .iti-span-copy.is-second {
+    align-self: start;
+    padding-top: 16svh;
+  }
+}
+/* reduced motion: the stage is not held; the silos simply stand beside the Mission */
+.iti-span.is-still .iti-span-silos {
+  top: 6rem;
+  bottom: auto;
+  height: min(70svh, 40rem);
+}
+@media (max-width: 1023px) {
+  .iti-span.is-still .iti-span-silos {
+    opacity: 0.35;
+  }
+}
+
+/* ---------- 16 — Industrial Precision & Connectivity: three apertures, upright then lying ---------- */
+.iti-prec-track {
+  background: #031f33;
+}
+.iti-prec {
+  background: linear-gradient(180deg, #042a42 0%, #03243a 50%, #031f33 100%);
+}
+.iti-prec-grid {
+  position: relative;
+  z-index: 2;
+  margin-inline: auto;
+  max-width: 1400px;
+  padding-inline: 1.25rem;
+  padding-top: 15svh;
+}
+
+/* The picture plane is the whole stage, laid out for a left-to-right page and mirrored whole for Arabic.
+   Every cut is the slope of the roof in the Group's mark: it rises 0.638 for every 1 it runs (and so runs 1.567 for every 1 it rises).
+   Lengths are in vw across and svh down, so the angle is the same on every screen.
+
+   Each aperture is four corners. Upright (a bar): A foot-left, B top-left, C top-right, D foot-right.
+   Lying (a strip): A top-left, B top-right, C bottom-right, D bottom-left — the bar turned a quarter clockwise.
+   --t1…3 (0 → 1) turn each one; --g1…3 (0 → 1) raise each bar from the floor as the stage arrives. */
+.iti-prec-plane {
+  --g1: 0;
+  --g2: 0;
+  --g3: 0;
+  --t1: 0;
+  --t2: 0;
+  --t3: 0;
+  --z: 0;
+  --k: 0.638;
+  --kr: 1.567;
+  /* upright: where the bars start, how wide they are, the gap between them, and where the cut line meets the first bar */
+  --bx: 8vw;
+  --bw: 24vw;
+  --bg: 6vw;
+  --by: 80svh;
+  /* lying: how tall the strips are, the gap, where the first one sits, and where the cut line meets its top edge */
+  --sy: 53svh;
+  --sh: 11svh;
+  --sg: 2svh;
+  --sx: 30vw;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+.iti-root[dir='rtl'] .iti-prec-plane {
+  transform: scaleX(-1);
+}
+.iti-prec-aperture {
+  /* this aperture's place in the row of three (0, 1, 2), its turn and its rise */
+  --i: 0;
+  --t: var(--t1);
+  --g: var(--g1);
+  --u: calc(1 - var(--t));
+  /* upright corners */
+  --x0: calc(var(--bx) + var(--i) * (var(--bw) + var(--bg)));
+  --x1: calc(var(--x0) + var(--bw));
+  --top0: calc(var(--by) - (var(--x0) - var(--bx)) * var(--k));
+  --top1: calc(var(--by) - (var(--x1) - var(--bx)) * var(--k));
+  /* a bar that has not risen yet has its top on the floor */
+  --yb: calc(100svh - var(--g) * (100svh - var(--top0)));
+  --yc: calc(100svh - var(--g) * (100svh - var(--top1)));
+  /* lying corners */
+  --y0: calc(var(--sy) + var(--i) * (var(--sh) + var(--sg)));
+  --y1: calc(var(--y0) + var(--sh));
+  --end0: calc(var(--sx) + (var(--y0) - var(--sy)) * var(--kr));
+  --end1: calc(var(--sx) + (var(--y1) - var(--sy)) * var(--kr));
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(
+    calc(var(--x0) * var(--u) + -2vw * var(--t)) calc(101svh * var(--u) + var(--y0) * var(--t)),
+    calc(var(--x0) * var(--u) + var(--end0) * var(--t)) calc(var(--yb) * var(--u) + var(--y0) * var(--t)),
+    calc(var(--x1) * var(--u) + var(--end1) * var(--t)) calc(var(--yc) * var(--u) + var(--y1) * var(--t)),
+    calc(var(--x1) * var(--u) + -2vw * var(--t)) calc(101svh * var(--u) + var(--y1) * var(--t))
+  );
+}
+.iti-prec-aperture.is-2 {
+  --i: 1;
+  --t: var(--t2);
+  --g: var(--g2);
+}
+.iti-prec-aperture.is-3 {
+  --i: 2;
+  --t: var(--t3);
+  --g: var(--g3);
+}
+/* The photographs sit in the same place in all three apertures, so the three read as one picture seen through three openings.
+   Each eases back from a slightly closer view as it settles (--z). */
+.iti-prec-photo {
+  position: absolute;
+  transform: scale(calc(1.12 - var(--z) * 0.12));
+  will-change: transform, opacity;
+}
+.iti-prec-photo.is-ring {
+  inset: 44svh 0 0 0;
+  /* the silos clear through the middle of the turn */
+  opacity: clamp(0, calc(1 - (var(--t) - 0.25) * 2.6), 1);
+}
+.iti-prec-photo.is-berth {
+  inset: 48svh -14vw 6svh -14vw;
+}
+
+/* phones and tablets: the words in the upper part of the stage, the apertures below */
+@media (max-width: 1023px) {
+  .iti-prec-copy.is-second {
+    position: absolute;
+    inset-inline: 1.25rem;
+    top: 15svh;
+  }
+}
+@media (min-width: 640px) {
+  .iti-prec-grid {
+    padding-inline: 2rem;
+  }
+  .iti-prec-copy.is-second {
+    inset-inline: 2rem;
+  }
+}
+/* tablets: the same arrangement with more room — narrower bars, taller strips */
+@media (min-width: 640px) and (max-width: 1023px) {
+  .iti-prec-plane {
+    --bx: 30vw;
+    --bw: 18vw;
+    --bg: 5vw;
+    --by: 84svh;
+    --sy: 50svh;
+    --sh: 12svh;
+    --sg: 2.4svh;
+    --sx: 26vw;
+  }
+}
+@media (min-width: 1024px) {
+  .iti-prec-grid {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: 2rem;
+    align-items: center;
+    padding-top: 0;
+  }
+  /* the Vision is set high on the far side, in the open ground above the line the strips are cut along */
+  .iti-prec-copy.is-second {
+    align-self: start;
+    padding-top: 16svh;
+  }
+  .iti-prec-plane {
+    --bx: 50vw;
+    --bw: 13vw;
+    --bg: 4vw;
+    --by: 62svh;
+    --sy: 26svh;
+    --sh: 17svh;
+    --sg: 3svh;
+    --sx: 20vw;
+  }
+  .iti-prec-photo.is-ring {
+    inset: 0 0 0 44vw;
+  }
+  .iti-prec-photo.is-berth {
+    inset: 18svh 16vw 12svh -4vw;
+  }
+}
+
+/* ---------- 17 — One Continuous Industrial Story: one held frame, two shots ---------- */
+.iti-story-track {
+  background: #031f33;
+}
+.iti-story {
+  background: linear-gradient(180deg, #042a42 0%, #03243a 50%, #031f33 100%);
+}
+.iti-story-grid {
+  position: relative;
+  z-index: 2;
+  margin-inline: auto;
+  width: 100%;
+  max-width: 1400px;
+  padding-inline: 1.25rem;
+}
+
+/* The picture plane is laid out for a left-to-right page and mirrored whole for Arabic.
+   --wipe (0 → 1) is how far the port has come through. */
+.iti-story-plane {
+  --wipe: 0;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+.iti-root[dir='rtl'] .iti-story-plane {
+  transform: scaleX(-1);
+}
+/* A shot is the frame a photograph is seen through; its edges are dissolved into the navy, so there is no box. */
+.iti-story-shot {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 30%, #000 86%, transparent 100%);
+  mask-image: linear-gradient(180deg, transparent 0%, #000 30%, #000 86%, transparent 100%);
+}
+/* the camera: a little larger than its frame, so it can move without showing an edge */
+.iti-story-cam {
+  position: absolute;
+  inset: -3%;
+  will-change: transform;
+}
+.iti-story-shot.is-works img {
+  object-position: 34% 50%;
+}
+.iti-story-shot.is-terminal img {
+  object-position: 57% 50%;
+}
+/* the soft-edged wipe the port comes through: it crosses the frame against the reading direction, a little off vertical */
+.iti-story-wipe {
+  --wx: calc(108% - var(--wipe) * 146%);
+  position: absolute;
+  inset: 0;
+  -webkit-mask-image: linear-gradient(97deg, transparent var(--wx), #000 calc(var(--wx) + 32%));
+  mask-image: linear-gradient(97deg, transparent var(--wx), #000 calc(var(--wx) + 32%));
+}
+/* navy held under the words, so they never sit on raw photograph */
+.iti-story-veil {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgb(3 31 51 / 0.86) 0%, rgb(3 31 51 / 0.6) 24%, rgb(3 31 51 / 0) 50%);
+}
+/* where we are in the film */
+.iti-story-reel {
+  position: absolute;
+  inset-inline-start: 2rem;
+  bottom: 6.5svh;
+  display: flex;
+  gap: 0.5rem;
+}
+.iti-story-reel span {
+  display: block;
+  width: 3.5rem;
+  height: 1px;
+  overflow: hidden;
+  background: rgb(255 255 255 / 0.2);
+}
+.iti-story-reel i {
+  display: block;
+  height: 100%;
+  background: #d4895f;
+  transform-origin: 0 50%;
+}
+.iti-root[dir='rtl'] .iti-story-reel i {
+  transform-origin: 100% 50%;
+}
+
+/* ---- nothing held: the two statements one under the other, each with its photograph ---- */
+.iti-story.is-flat {
+  padding-top: 6.5rem;
+}
+.iti-story-scene {
+  position: relative;
+}
+.iti-story-scene.is-vision {
+  margin-top: 1rem;
+}
+@media (max-width: 1023px) {
+  .iti-story.is-flat .iti-story-plane {
+    position: relative;
+    inset: auto;
+    height: clamp(17rem, 50svh, 29rem);
+    margin-top: 0.5rem;
+  }
+  .iti-story.is-flat .iti-story-veil {
+    display: none;
+  }
+}
+@media (min-width: 640px) {
+  .iti-story-grid {
+    padding-inline: 2rem;
+  }
+}
+
+/* ---- desktop: the words on the reading side, the picture in the rest of the frame ---- */
+@media (min-width: 1024px) {
+  .iti-story-grid {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    column-gap: 2rem;
+    align-items: center;
+  }
+  .iti-story-copy {
+    grid-column: 1 / span 5;
+    grid-row: 1;
+  }
+  /* the plant stands in the far three quarters of the frame, its near edge dissolved into the navy */
+  .iti-story-shot.is-works {
+    inset: 0 -4vw 0 30vw;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgb(0 0 0 / 0.4) 16%, #000 38%), linear-gradient(180deg, transparent 0%, #000 17%, #000 84%, transparent 100%);
+    -webkit-mask-composite: source-in;
+    mask-image: linear-gradient(90deg, transparent 0%, rgb(0 0 0 / 0.4) 16%, #000 38%), linear-gradient(180deg, transparent 0%, #000 17%, #000 84%, transparent 100%);
+    mask-composite: intersect;
+  }
+  .iti-story-shot.is-works img {
+    object-position: 22% 50%;
+  }
+  /* the port runs out past the far edge; its open water is left on the reading side for the Vision */
+  .iti-story-shot.is-terminal {
+    inset: 0 -12vw 0 14vw;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgb(0 0 0 / 0.45) 12%, #000 30%), linear-gradient(180deg, transparent 0%, #000 13%, #000 88%, transparent 100%);
+    -webkit-mask-composite: source-in;
+    mask-image: linear-gradient(90deg, transparent 0%, rgb(0 0 0 / 0.45) 12%, #000 30%), linear-gradient(180deg, transparent 0%, #000 13%, #000 88%, transparent 100%);
+    mask-composite: intersect;
+  }
+  .iti-story-shot.is-terminal img {
+    object-position: 0% 50%;
+  }
+  .iti-story.is-flat {
+    padding-top: 0;
+  }
+  .iti-story.is-flat .iti-story-scene {
+    display: grid;
+    align-items: center;
+    min-height: 92svh;
+    margin-top: 0;
+  }
 }
 
 /* ---------- 10 — Compass: one instrument, two readings ---------- */
@@ -1210,7 +1966,7 @@ button.iti-compass-pole:not(.is-on):hover {
   max-width: 17ch;
   font-family: var(--iti-head);
   font-weight: 700;
-  font-size: clamp(1.6rem, 3.7vw, 3.4rem);
+  font-size: clamp(1.55rem, 3vw, 2.7rem);
   line-height: 1.1;
   letter-spacing: -0.025em;
   text-wrap: balance;
@@ -1280,7 +2036,7 @@ button.iti-compass-pole:not(.is-on):hover {
   max-width: 19ch;
   font-family: var(--iti-head);
   font-weight: 700;
-  font-size: clamp(1.6rem, 2.75vw, 2.55rem);
+  font-size: clamp(1.5rem, 2.35vw, 2.15rem);
   line-height: 1.14;
   letter-spacing: -0.02em;
   text-wrap: balance;
@@ -1326,7 +2082,7 @@ button.iti-compass-pole:not(.is-on):hover {
   bottom: -0.1em;
   font-family: var(--iti-head);
   font-weight: 800;
-  font-size: clamp(6.5rem, 13vw, 11.5rem);
+  font-size: clamp(5.5rem, 10.5vw, 9.25rem);
   line-height: 0.8;
   letter-spacing: -0.05em;
   color: transparent;
@@ -1406,7 +2162,7 @@ button.iti-compass-pole:not(.is-on):hover {
   max-width: 17ch;
   font-family: var(--iti-head);
   font-weight: 700;
-  font-size: clamp(2.1rem, 5vw, 4.7rem);
+  font-size: clamp(1.9rem, 3.7vw, 3.35rem);
   line-height: 1.04;
   letter-spacing: -0.035em;
   text-wrap: balance;
@@ -1480,7 +2236,7 @@ button.iti-compass-pole:not(.is-on):hover {
   margin-top: 1.5rem;
   font-family: var(--iti-head);
   font-weight: 800;
-  font-size: clamp(1.95rem, 3.6vw, 3.4rem);
+  font-size: clamp(1.75rem, 2.9vw, 2.65rem);
   line-height: 1.06;
   letter-spacing: -0.035em;
   text-wrap: balance;
@@ -1491,7 +2247,7 @@ button.iti-compass-pole:not(.is-on):hover {
 .iti-light-body {
   margin-top: 1.5rem;
   max-width: 44ch;
-  font-size: clamp(1rem, 1.2vw, 1.12rem);
+  font-size: var(--iti-fs-lead);
   line-height: 1.7;
 }
 .iti-light-copy.is-lit .iti-light-body {
@@ -1637,7 +2393,7 @@ button.iti-compass-pole:not(.is-on):hover {
   background: var(--iti-navy);
   color: #fff;
   font-family: var(--iti-head);
-  font-size: clamp(1.05rem, 1.4vw, 1.22rem);
+  font-size: clamp(1rem, 1.2vw, 1.1rem);
   font-weight: 700;
   box-shadow: 0 26px 50px -24px rgb(5 53 82 / 0.7);
   transition: box-shadow 0.5s;
@@ -1698,7 +2454,7 @@ button.iti-compass-pole:not(.is-on):hover {
   color: #fff;
   text-align: center;
   font-family: var(--iti-head);
-  font-size: clamp(1.08rem, 1.4vw, 1.3rem);
+  font-size: clamp(1.02rem, 1.25vw, 1.16rem);
   font-weight: 700;
   line-height: 1.2;
   background: radial-gradient(circle at 34% 28%, rgb(33 92 126 / 0.75), rgb(5 53 82 / 0.55));
@@ -1774,9 +2530,9 @@ button.iti-compass-pole:not(.is-on):hover {
 }
 
 /* ---------- 7 — Headline: the sentence itself is the way in ---------- */
+/* on Mist Grey, like the other contact versions: it opens in the cooler mist that follows the map */
 .iti-cta-line {
-  background: #fff;
-  border-top: 1px solid var(--iti-line);
+  background: linear-gradient(180deg, var(--iti-tone-mist) 0, var(--iti-mist) 8rem);
 }
 .iti-cta-headline {
   position: relative;
@@ -1813,9 +2569,10 @@ button.iti-compass-pole:not(.is-on):hover {
   display: block;
   font-family: var(--iti-head);
   font-weight: 800;
-  font-size: clamp(2.5rem, 7.6vw, 7.2rem);
-  line-height: 0.98;
-  letter-spacing: -0.04em;
+  /* a headline, not a poster: the client found the first size far too large */
+  font-size: clamp(2rem, 3.7vw, 3.35rem);
+  line-height: 1.04;
+  letter-spacing: -0.03em;
   color: transparent;
   background:
     linear-gradient(100deg, #c27448 0%, #a9613a 60%, #7d4426 100%) no-repeat left / 0% 100%,
@@ -1844,7 +2601,7 @@ button.iti-compass-pole:not(.is-on):hover {
   overflow: hidden;
   display: grid;
   place-items: center;
-  width: clamp(3.6rem, 5.4vw, 5rem);
+  width: clamp(3.25rem, 4.2vw, 4rem);
   aspect-ratio: 1;
   border-radius: 999px;
   background: var(--iti-navy);
@@ -1994,7 +2751,7 @@ button.iti-compass-pole:not(.is-on):hover {
   max-width: 9ch;
   font-family: var(--iti-head);
   font-weight: 800;
-  font-size: clamp(1.5rem, 2.1vw, 1.85rem);
+  font-size: var(--iti-fs-h3);
   line-height: 1.08;
   letter-spacing: -0.02em;
 }
@@ -2128,7 +2885,7 @@ button.iti-compass-pole:not(.is-on):hover {
   background-clip: text;
 }
 .iti-values-title {
-  font-size: clamp(2.1rem, 4vw, 3.5rem);
+  font-size: var(--iti-fs-h2);
   line-height: 1.1;
 }
 .iti-root[dir='rtl'] .iti-values-title {
@@ -2244,7 +3001,7 @@ button.iti-compass-pole:not(.is-on):hover {
   border-top: 1px solid var(--iti-line);
 }
 .iti-biz-title {
-  font-size: clamp(2.1rem, 3.8vw, 3.3rem);
+  font-size: var(--iti-fs-h2);
   line-height: 1.1;
 }
 .iti-root[dir='rtl'] .iti-biz-title {
@@ -2428,7 +3185,7 @@ button.iti-compass-pole:not(.is-on):hover {
 
 /* contact */
 .iti-contact-title {
-  font-size: clamp(2.1rem, 3.6vw, 3.2rem);
+  font-size: var(--iti-fs-h2);
   line-height: 1.1;
 }
 .iti-root[dir='rtl'] .iti-contact-title {
